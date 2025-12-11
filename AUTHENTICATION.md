@@ -24,6 +24,7 @@ The authentication token should contain a `user_type` field:
 }
 ```
 
+
 ## Implementation
 
 ### Server-Side (Token Extraction)

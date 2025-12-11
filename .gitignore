@@ -1,0 +1,16 @@
+node_modules
+dist/
+.env
+*.log
+.DS_Store
+coverage/
+build/
+tmp/
+# IDE files
+.vscode/
+.idea/
+# OS files
+Thumbs.db
+# Dependency directories
+bower_components/
+.next/

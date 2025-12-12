@@ -20,8 +20,8 @@ import type { UserRole } from "@/lib/auth";
 
 const EXECUTIVE_NAVIGATION = [
 	{ href: "/", label: "Executive Dashboard", icon: LayoutDashboard },
-	{ href: "/ops-review", label: "Ops Review Queue", icon: Headphones },
-	{ href: "/tasks/pipeline", label: "Task Pipeline", icon: ClipboardList },
+	{ href: "/call-audits", label: "Call Audits", icon: PhoneCall },
+	{ href: "/tasks", label: "Tasks", icon: CheckSquare },
 ];
 
 const SALES_OPS_NAVIGATION = [
@@ -98,6 +98,12 @@ export function Sidebar({ userType }: SidebarProps) {
 							} else if (item.href === "/sales-team") {
 								// Sales team dashboard: exact match only
 								isActive = pathname === "/sales-team";
+							} else if (item.href === "/tasks") {
+								// Tasks: exact match or detail pages (/tasks/[id]), but NOT /tasks/pipeline
+								isActive = pathname === "/tasks" || (pathname.startsWith("/tasks/") && !pathname.startsWith("/tasks/pipeline"));
+							} else if (item.href === "/tasks/pipeline") {
+								// Pipeline: exact match only
+								isActive = pathname === "/tasks/pipeline";
 							} else {
 								// Other routes: exact match or pathname starts with href (for detail pages)
 								isActive = pathname === item.href || pathname.startsWith(item.href + "/");

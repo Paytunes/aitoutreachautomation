@@ -66,37 +66,44 @@ export function DashboardContent({
 	const { role: contextRole } = useRole();
 	const userType = contextRole || initialUserType || "sales_ops";
 
-	// Executive view - Analytics focused, no task/call audit details
-	if (userType === "executive") {
-		const [allAudits, setAllAudits] = useState<CallAuditView[]>([]);
+	// All hooks must be called unconditionally at the top level
+	const [allAudits, setAllAudits] = useState<CallAuditView[]>([]);
 
-		// Fetch all audits for high probability leads calculation
-		useEffect(() => {
+	// Fetch all audits for high probability leads calculation (only for executive view)
+	useEffect(() => {
+		if (userType === "executive") {
 			const loadAudits = async () => {
 				const result = await getCallAudits(1, 1000);
 				setAllAudits(result.data);
 			};
 			loadAudits();
-		}, []);
+		}
+	}, [userType]);
 
-		// Calculate high probability leads based on interest level and disposition
-		const highProbabilityLeads = useMemo(() => {
-			// Negative dispositions to exclude
-			const negativeDispositions = ["not_interested", "wrong_company", "wrong_person", "dnd_requested"];
+	// Calculate high probability leads based on interest level and disposition
+	const highProbabilityLeads = useMemo(() => {
+		if (userType !== "executive") {
+			return [];
+		}
+		// Negative dispositions to exclude
+		const negativeDispositions = ["not_interested", "wrong_company", "wrong_person", "dnd_requested"];
 
-			return allAudits
-				.filter((audit) => {
-					// Filter by high interest level (>= 7) and positive dispositions
-					const hasHighInterest = (audit.interest_level || 0) >= 7;
-					const hasPositiveDisposition =
-						audit.dispositions &&
-						!negativeDispositions.includes(audit.dispositions) &&
-						audit.dispositions !== "NA";
-					return hasHighInterest && hasPositiveDisposition;
-				})
-				.sort((a, b) => (b.interest_level || 0) - (a.interest_level || 0)) // Sort by interest level descending
-				.slice(0, 10); // Top 10 only
-		}, [allAudits]);
+		return allAudits
+			.filter((audit) => {
+				// Filter by high interest level (>= 7) and positive dispositions
+				const hasHighInterest = (audit.interest_level || 0) >= 7;
+				const hasPositiveDisposition =
+					audit.dispositions &&
+					!negativeDispositions.includes(audit.dispositions) &&
+					audit.dispositions !== "NA";
+				return hasHighInterest && hasPositiveDisposition;
+			})
+			.sort((a, b) => (b.interest_level || 0) - (a.interest_level || 0)) // Sort by interest level descending
+			.slice(0, 10); // Top 10 only
+	}, [allAudits, userType]);
+
+	// Executive view - Analytics focused, no task/call audit details
+	if (userType === "executive") {
 
 		// Executive metrics data - matching screenshot values
 		const executiveMetrics = {

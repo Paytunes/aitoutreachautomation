@@ -8,6 +8,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
 	"/": "Dashboard",
 	"/sales-team": "My Dashboard",
 	"/call-audits": "Call Audits",
+	"/ops-review": "Ops Review Queue",
 	"/tasks": "Tasks",
 	"/tasks/pipeline": "Task Pipeline",
 };

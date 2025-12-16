@@ -163,11 +163,6 @@ export function DashboardWrapper({
 				fill: "#f59e0b",
 			},
 			{
-				name: "In Progress",
-				count: filteredTasks.filter((t) => t.task_status === "in-progress").length,
-				fill: "#3b82f6",
-			},
-			{
 				name: "Completed",
 				count: filteredTasks.filter((t) => t.task_status === "completed").length,
 				fill: "#22c55e",

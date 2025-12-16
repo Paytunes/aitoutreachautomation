@@ -75,7 +75,6 @@ export default function SalesTeamDashboard() {
 
 	const assignedTasks = tasks;
 	const todoTasks = tasks.filter((t) => t.task_status === "todo");
-	const inProgressTasks = tasks.filter((t) => t.task_status === "in-progress");
 	const completedTasks = tasks.filter((t) => t.task_status === "completed");
 
 	// Filter TODO tasks that are older than configured days
@@ -118,8 +117,6 @@ export default function SalesTeamDashboard() {
 		switch (status) {
 			case "completed":
 				return "bg-green-500/10 text-green-700 border-green-500/30";
-			case "in-progress":
-				return "bg-blue-500/10 text-blue-700 border-blue-500/30";
 			case "todo":
 				return "bg-yellow-500/10 text-yellow-700 border-yellow-500/30";
 			default:
@@ -131,8 +128,6 @@ export default function SalesTeamDashboard() {
 		switch (status) {
 			case "completed":
 				return <CheckSquare className="w-5 h-5 text-green-600" />;
-			case "in-progress":
-				return <Clock className="w-5 h-5 text-blue-600" />;
 			case "todo":
 				return <Circle className="w-5 h-5 text-yellow-600" />;
 			default:
@@ -144,13 +139,14 @@ export default function SalesTeamDashboard() {
 		<div className="flex-1 space-y-8 p-6 lg:p-10">
 			{/* Metrics Grid */}
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<Link href="/tasks" className="block">
-					<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer">
-						<CardContent className="pt-6">
-							<div className="flex items-start justify-between">
+				<Link href="/tasks" className="block h-full">
+					<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer h-full">
+						<CardContent className="pt-6 h-full flex flex-col">
+							<div className="flex items-start justify-between flex-1">
 								<div className="flex-1">
 									<p className="text-sm font-medium text-muted-foreground">Total Assigned</p>
 									<p className="text-3xl font-bold text-foreground mt-2">{assignedTasks.length}</p>
+									<p className="text-xs text-muted-foreground mt-1 opacity-0">Placeholder</p>
 								</div>
 								<CheckSquare className="w-8 h-8 text-primary" />
 							</div>
@@ -158,13 +154,14 @@ export default function SalesTeamDashboard() {
 					</Card>
 				</Link>
 
-				<Link href="/tasks?status=todo" className="block">
-					<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer">
-						<CardContent className="pt-6">
-							<div className="flex items-start justify-between">
+				<Link href="/tasks?status=todo" className="block h-full">
+					<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer h-full">
+						<CardContent className="pt-6 h-full flex flex-col">
+							<div className="flex items-start justify-between flex-1">
 								<div className="flex-1">
 									<p className="text-sm font-medium text-muted-foreground">Todo</p>
 									<p className="text-3xl font-bold text-foreground mt-2">{todoTasks.length}</p>
+									<p className="text-xs text-muted-foreground mt-1 opacity-0">Placeholder</p>
 								</div>
 								<Circle className="w-8 h-8 text-yellow-600" />
 							</div>
@@ -172,10 +169,10 @@ export default function SalesTeamDashboard() {
 					</Card>
 				</Link>
 
-				<Link href="/tasks?status=completed" className="block">
-					<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer">
-						<CardContent className="pt-6">
-							<div className="flex items-start justify-between">
+				<Link href="/tasks?status=completed" className="block h-full">
+					<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer h-full">
+						<CardContent className="pt-6 h-full flex flex-col">
+							<div className="flex items-start justify-between flex-1">
 								<div className="flex-1">
 									<p className="text-sm font-medium text-muted-foreground">Completed</p>
 									<p className="text-3xl font-bold text-foreground mt-2">{completedTasks.length}</p>
@@ -196,7 +193,7 @@ export default function SalesTeamDashboard() {
 			{/* Tasks List */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{/* Pending Tasks */}
-				<Card className="bg-card border-border">
+				<Card className="bg-card border-border h-full flex flex-col">
 					<CardHeader>
 						<div className="flex items-center justify-between">
 							<CardTitle className="text-foreground">Todo Tasks</CardTitle>
@@ -205,8 +202,8 @@ export default function SalesTeamDashboard() {
 							</Badge>
 						</div>
 					</CardHeader>
-					<CardContent>
-						<div className="space-y-3">
+					<CardContent className="flex-1 flex flex-col min-h-0">
+						<div className="space-y-3 flex-1 overflow-y-auto">
 							{loading ? (
 								<p className="text-sm text-muted-foreground">Loading...</p>
 							) : todoTasks.length === 0 ? (
@@ -239,7 +236,7 @@ export default function SalesTeamDashboard() {
 				</Card>
 
 				{/* Overdue Todo Tasks */}
-				<Card className="bg-card border-border">
+				<Card className="bg-card border-border h-full flex flex-col">
 					<CardHeader>
 						<div className="flex items-center justify-between">
 							<CardTitle className="text-foreground">
@@ -250,8 +247,8 @@ export default function SalesTeamDashboard() {
 							</Badge>
 						</div>
 					</CardHeader>
-					<CardContent>
-						<div className="space-y-3">
+					<CardContent className="flex-1 flex flex-col min-h-0">
+						<div className="space-y-3 flex-1 overflow-y-auto">
 							{loading ? (
 								<p className="text-sm text-muted-foreground">Loading...</p>
 							) : overdueTodoTasks.length === 0 ? (

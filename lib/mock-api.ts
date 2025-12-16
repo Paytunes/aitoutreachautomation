@@ -927,7 +927,7 @@ const TASKS: Task[] = [
 		actionable_id: "act-006",
 		employee_id: "2",
 		call_audit_id: "audit-002",
-		task_status: "in-progress",
+		task_status: "todo",
 		description: "Send case studies and product deck to Alice Johnson",
 		created_at: "2025-12-14T14:15:00Z",
 		updated_at: "2025-12-14T14:30:00Z",
@@ -947,7 +947,7 @@ const TASKS: Task[] = [
 		actionable_id: "act-008",
 		employee_id: "4",
 		call_audit_id: "audit-004",
-		task_status: "in-progress",
+		task_status: "todo",
 		description: "Update lead data in CRM for Thomas Wilson - mark as qualified",
 		created_at: "2025-12-13T14:25:00Z",
 		updated_at: "2025-12-13T14:40:00Z",
@@ -987,7 +987,7 @@ const TASKS: Task[] = [
 		actionable_id: "act-007",
 		employee_id: "4",
 		call_audit_id: "audit-008",
-		task_status: "in-progress",
+		task_status: "todo",
 		description: "Callback scheduled with Jennifer Lee for Dec 3rd at 2 PM",
 		created_at: "2025-12-15T10:00:00Z",
 		updated_at: "2025-12-15T11:00:00Z",
@@ -1134,9 +1134,9 @@ export async function getTasks(
 		}
 
 		return {
-		...task,
-		actionable: ACTIONABLES.find((a) => a.id === task.actionable_id)!,
-		employee: EMPLOYEES.find((e) => e.id === task.employee_id)!,
+			...task,
+			actionable: ACTIONABLES.find((a) => a.id === task.actionable_id)!,
+			employee: EMPLOYEES.find((e) => e.id === task.employee_id)!,
 			call_audit: callAuditWithDetails,
 		};
 	});

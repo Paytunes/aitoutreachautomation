@@ -190,8 +190,6 @@ export default function TasksPage() {
 		switch (status) {
 			case "completed":
 				return "bg-green-500/10 text-green-700 border-green-500/30";
-			case "in-progress":
-				return "bg-blue-500/10 text-blue-700 border-blue-500/30";
 			case "todo":
 				return "bg-yellow-500/10 text-yellow-700 border-yellow-500/30";
 			default:
@@ -247,7 +245,6 @@ export default function TasksPage() {
 								<SelectContent>
 									<SelectItem value="all">All Status</SelectItem>
 									<SelectItem value="todo">Todo</SelectItem>
-									<SelectItem value="in-progress">In Progress</SelectItem>
 									<SelectItem value="completed">Completed</SelectItem>
 								</SelectContent>
 							</Select>

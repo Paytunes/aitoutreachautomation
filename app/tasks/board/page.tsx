@@ -91,8 +91,6 @@ export default function TaskBoardPage() {
 		switch (status) {
 			case "completed":
 				return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-			case "in-progress":
-				return <Clock className="w-5 h-5 text-blue-600" />;
 			case "todo":
 				return <Circle className="w-5 h-5 text-yellow-600" />;
 			default:

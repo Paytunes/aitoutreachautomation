@@ -73,7 +73,7 @@ export interface Task {
 	actionable_id: string;
 	employee_id: string;
 	call_audit_id?: string;
-	task_status: "todo" | "in-progress" | "completed";
+	task_status: "todo" | "completed";
 	description?: string;
 	created_at: string;
 	updated_at: string;

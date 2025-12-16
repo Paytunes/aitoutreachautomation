@@ -475,8 +475,6 @@ export function DashboardContent({
 													className={
 														task.task_status === "completed"
 															? "bg-green-500/10 text-green-700 border-green-500/30"
-															: task.task_status === "in-progress"
-															? "bg-blue-500/10 text-blue-700 border-blue-500/30"
 															: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30"
 													}
 												>

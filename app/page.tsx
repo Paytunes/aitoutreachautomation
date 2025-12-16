@@ -77,11 +77,6 @@ export default async function DashboardPage() {
 			fill: "#f59e0b", // Amber
 		},
 		{
-			name: "In Progress",
-			count: allTasks.data.filter((t) => t.task_status === "in-progress").length,
-			fill: "#3b82f6", // Blue
-		},
-		{
 			name: "Completed",
 			count: allTasks.data.filter((t) => t.task_status === "completed").length,
 			fill: "#22c55e", // Green

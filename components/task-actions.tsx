@@ -10,7 +10,7 @@ interface TaskActionsProps {
 	initialStatus: string;
 }
 
-const STATUS_OPTIONS = ["todo", "in-progress", "completed", "on-hold", "cancelled"] as const;
+const STATUS_OPTIONS = ["todo", "completed", "on-hold", "cancelled"] as const;
 
 // Format task status to Title Case
 const formatTaskStatus = (status: string): string => {

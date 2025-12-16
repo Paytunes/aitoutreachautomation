@@ -53,8 +53,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 		switch (status) {
 			case "completed":
 				return "bg-green-500/10 text-green-700 border-green-500/30";
-			case "in-progress":
-				return "bg-blue-500/10 text-blue-700 border-blue-500/30";
 			case "todo":
 				return "bg-yellow-500/10 text-yellow-700 border-yellow-500/30";
 			default:
@@ -66,8 +64,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 		switch (status) {
 			case "completed":
 				return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-			case "in-progress":
-				return <Clock className="w-5 h-5 text-blue-600" />;
 			case "todo":
 				return <Circle className="w-5 h-5 text-yellow-600" />;
 			default:
@@ -165,7 +161,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 					</Button>
 				</div>
 				<Badge variant="outline" className={getStatusColor(task.task_status)}>
-					{task.task_status}
+					{formatTaskStatus(task.task_status)}
 				</Badge>
 			</div>
 

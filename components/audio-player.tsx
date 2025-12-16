@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 interface AudioPlayerProps {
 	duration?: number;
+	src?: string;
 }
 
 // Simple seeded random function for consistent waveform
@@ -14,9 +15,11 @@ function seededRandom(seed: number) {
 	return x - Math.floor(x);
 }
 
-export function AudioPlayer({ duration = 202 }: AudioPlayerProps) {
+export function AudioPlayer({ duration = 202, src }: AudioPlayerProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currentTime, setCurrentTime] = useState(0);
+	const [resolvedDuration, setResolvedDuration] = useState(duration);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	// Generate consistent bar heights using seeded random
@@ -28,6 +31,38 @@ export function AudioPlayer({ duration = 202 }: AudioPlayerProps) {
 		}
 		return heights;
 	}, []);
+
+	// Attach audio element when src is provided
+	useEffect(() => {
+		if (!src) {
+			audioRef.current = null;
+			setResolvedDuration(duration);
+			return;
+		}
+
+		const audio = new Audio(src);
+		audioRef.current = audio;
+
+		const handleLoaded = () => {
+			if (!isNaN(audio.duration) && audio.duration > 0) {
+				setResolvedDuration(audio.duration);
+			}
+		};
+
+		const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+		const handleEnded = () => setIsPlaying(false);
+
+		audio.addEventListener("loadedmetadata", handleLoaded);
+		audio.addEventListener("timeupdate", handleTimeUpdate);
+		audio.addEventListener("ended", handleEnded);
+
+		return () => {
+			audio.pause();
+			audio.removeEventListener("loadedmetadata", handleLoaded);
+			audio.removeEventListener("timeupdate", handleTimeUpdate);
+			audio.removeEventListener("ended", handleEnded);
+		};
+	}, [src, duration]);
 
 	// Generate waveform visualization
 	useEffect(() => {
@@ -59,7 +94,7 @@ export function AudioPlayer({ duration = 202 }: AudioPlayerProps) {
 		ctx.fillRect(0, 0, displayWidth, displayHeight);
 
 		const barWidth = displayWidth / bars - 2; // Slight gap between bars
-		const playedWidth = (currentTime / duration) * displayWidth;
+		const playedWidth = (currentTime / resolvedDuration) * displayWidth;
 
 		// Draw all bars
 		for (let i = 0; i < bars; i++) {
@@ -83,24 +118,33 @@ export function AudioPlayer({ duration = 202 }: AudioPlayerProps) {
 			// Draw the bar with rounded corners effect
 			ctx.fillRect(x, y, barWidth, barHeight);
 		}
-	}, [currentTime, duration, barHeights]);
+	}, [currentTime, resolvedDuration, barHeights]);
 
-	// Simulate playback when playing
+	// Playback (real audio if src, otherwise simulated)
 	useEffect(() => {
+		if (src && audioRef.current) {
+			if (isPlaying) {
+				audioRef.current.play().catch(() => setIsPlaying(false));
+			} else {
+				audioRef.current.pause();
+			}
+			return;
+		}
+
 		if (!isPlaying) return;
 
 		const interval = setInterval(() => {
 			setCurrentTime((prev) => {
-				if (prev >= duration) {
+				if (prev >= resolvedDuration) {
 					setIsPlaying(false);
-					return duration;
+					return resolvedDuration;
 				}
 				return prev + 0.1;
 			});
 		}, 100);
 
 		return () => clearInterval(interval);
-	}, [isPlaying, duration]);
+	}, [isPlaying, resolvedDuration, src]);
 
 	const formatTime = (seconds: number) => {
 		const mins = Math.floor(seconds / 60);
@@ -123,7 +167,7 @@ export function AudioPlayer({ duration = 202 }: AudioPlayerProps) {
 			</div>
 			<div className="flex justify-between text-sm text-muted-foreground px-1">
 				<span>{formatTime(currentTime)}</span>
-				<span>{formatTime(duration)}</span>
+				<span>{formatTime(resolvedDuration)}</span>
 			</div>
 		</div>
 	);

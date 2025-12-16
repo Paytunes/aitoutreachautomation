@@ -94,30 +94,6 @@ export function CallbackView({ task }: CallbackViewProps) {
 
 			<Card className="bg-card border-border">
 				<CardHeader>
-					<CardTitle className="text-foreground">Contact Information</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-3">
-						<div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
-							<User className="w-5 h-5 text-muted-foreground" />
-							<div>
-								<p className="text-sm font-semibold text-foreground">Lead Name</p>
-								<p className="text-sm text-muted-foreground">From call audit data</p>
-							</div>
-						</div>
-						<div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
-							<Phone className="w-5 h-5 text-muted-foreground" />
-							<div>
-								<p className="text-sm font-semibold text-foreground">Phone Number</p>
-								<p className="text-sm text-muted-foreground">From call audit data</p>
-							</div>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card className="bg-card border-border">
-				<CardHeader>
 					<CardTitle className="text-foreground">Reminder Settings</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-3">

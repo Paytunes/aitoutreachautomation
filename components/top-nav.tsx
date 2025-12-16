@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/lib/role-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getTaskById } from "@/lib/mock-api";
 
 const BREADCRUMB_MAP: Record<string, string> = {
 	"/": "Dashboard",
@@ -10,7 +12,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
 	"/call-audits": "Call Audits",
 	"/ops-review": "Ops Review Queue",
 	"/tasks": "Tasks",
-	"/tasks/pipeline": "Task Pipeline",
+	"/tasks/board": "Task Board",
 };
 
 export function TopNav() {
@@ -18,18 +20,50 @@ export function TopNav() {
 	const router = useRouter();
 	const { role, setRole } = useRole();
 
-	// Handle detail pages
+	const [dynamicTitle, setDynamicTitle] = useState<string | null>(null);
+
+	const isTaskDetail = useMemo(() => {
+		// Matches /tasks/[id] but not /tasks or /tasks/board
+		return pathname.startsWith("/tasks/") && !pathname.includes("/board");
+	}, [pathname]);
+
+	useEffect(() => {
+		const loadTaskTitle = async () => {
+			if (!isTaskDetail) {
+				setDynamicTitle(null);
+				return;
+			}
+			const parts = pathname.split("/").filter(Boolean);
+			const taskId = parts[1];
+			if (!taskId) {
+				setDynamicTitle(null);
+				return;
+			}
+			const task = await getTaskById(taskId);
+			if (task?.actionable?.name) {
+				setDynamicTitle(task.actionable.name);
+			} else if (task?.id) {
+				setDynamicTitle(`Task ${task.id}`);
+			} else {
+				setDynamicTitle("Task Details");
+			}
+		};
+
+		loadTaskTitle();
+	}, [pathname, isTaskDetail]);
+
+	// Handle detail pages and overrides
 	let title = BREADCRUMB_MAP[pathname] || "Page";
 	if (pathname.includes("/call-audits/")) {
 		title = "Call Audit Details";
-	} else if (pathname.includes("/tasks/") && !pathname.includes("/pipeline")) {
-		title = "Task Details";
+	} else if (isTaskDetail) {
+		title = dynamicTitle || "Task Details";
 	}
 
 	const handleRoleChange = (value: string) => {
 		const newRole = value as any;
 		setRole(newRole);
-		
+
 		// Navigate to appropriate dashboard based on role
 		if (newRole === "sales_team") {
 			router.push("/sales-team");

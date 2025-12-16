@@ -49,6 +49,7 @@ interface DashboardContentProps {
 	campaignData: Array<{ name: string; total_calls: number; answered_calls: number; converted_calls: number }>;
 	dispositionData: Array<{ name: string; value: number; fill: string }>;
 	taskStatusData: Array<{ name: string; count: number; fill: string }>;
+	taskDispositionData: Array<{ name: string; value: number; fill: string }>;
 	recentAudits: { data: CallAuditView[] };
 	recentTasks: { data: TaskView[] };
 }
@@ -59,12 +60,21 @@ export function DashboardContent({
 	campaignData,
 	dispositionData,
 	taskStatusData,
+	taskDispositionData,
 	recentAudits,
 	recentTasks,
 }: DashboardContentProps) {
 	// Use role from context (can be changed via dropdown), fallback to prop
 	const { role: contextRole } = useRole();
 	const userType = contextRole || initialUserType || "sales_ops";
+
+	// Format task status to Title Case
+	const formatTaskStatus = (status: string): string => {
+		return status
+			.split("-")
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(" ");
+	};
 
 	// All hooks must be called unconditionally at the top level
 	const [allAudits, setAllAudits] = useState<CallAuditView[]>([]);
@@ -104,7 +114,6 @@ export function DashboardContent({
 
 	// Executive view - Analytics focused, no task/call audit details
 	if (userType === "executive") {
-
 		// Executive metrics data - matching screenshot values
 		const executiveMetrics = {
 			totalLeadsIngested: 12450,
@@ -374,6 +383,7 @@ export function DashboardContent({
 				campaignData={campaignData}
 				dispositionData={dispositionData}
 				taskStatusData={taskStatusData}
+				taskDispositionData={taskDispositionData}
 			/>
 
 			{/* Recent Audits and Tasks */}
@@ -470,7 +480,7 @@ export function DashboardContent({
 															: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30"
 													}
 												>
-													{task.task_status}
+													{formatTaskStatus(task.task_status)}
 												</Badge>
 											</TableCell>
 											<TableCell className="text-sm text-muted-foreground">

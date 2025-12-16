@@ -26,9 +26,9 @@ const DISPOSITION_CHOICES = [
 
 // Helper function to get disposition label from value
 const getDispositionLabel = (value: string): string => {
-	const choice = DISPOSITION_CHOICES.find(([val]) => val === value)
-	return choice ? choice[1] : value
-}
+	const choice = DISPOSITION_CHOICES.find(([val]) => val === value);
+	return choice ? choice[1] : value;
+};
 
 interface DashboardWrapperProps {
 	userType: UserRole;
@@ -112,7 +112,9 @@ export function DashboardWrapper({
 			const totalCalls = campaignAudits.length;
 			const answeredCalls = campaignAudits.filter((a) => a.call_status === "answered" || a.call_duration).length;
 			const convertedCalls = campaignAudits.filter(
-				(a) => a.dispositions && !["not_interested", "wrong_company", "wrong_person", "dnd_requested"].includes(a.dispositions)
+				(a) =>
+					a.dispositions &&
+					!["not_interested", "wrong_company", "wrong_person", "dnd_requested"].includes(a.dispositions)
 			).length;
 
 			return {
@@ -132,8 +134,19 @@ export function DashboardWrapper({
 		});
 
 		const chartColors = [
-			"#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#f97316",
-			"#84cc16", "#14b8a6", "#3b82f6", "#a855f7", "#10b981",
+			"#6366f1",
+			"#22c55e",
+			"#f59e0b",
+			"#ef4444",
+			"#8b5cf6",
+			"#06b6d4",
+			"#ec4899",
+			"#f97316",
+			"#84cc16",
+			"#14b8a6",
+			"#3b82f6",
+			"#a855f7",
+			"#10b981",
 		];
 
 		const dispositionData = Array.from(dispositionCounts.entries()).map(([value, count], index) => ({
@@ -145,8 +158,8 @@ export function DashboardWrapper({
 		// Recalculate task status data
 		const taskStatusData = [
 			{
-				name: "Pending",
-				count: filteredTasks.filter((t) => t.task_status === "pending").length,
+				name: "Todo",
+				count: filteredTasks.filter((t) => t.task_status === "todo").length,
 				fill: "#f59e0b",
 			},
 			{
@@ -161,11 +174,29 @@ export function DashboardWrapper({
 			},
 		];
 
+		// Calculate task counts by disposition
+		const taskDispositionCounts = new Map<string, number>();
+		filteredTasks.forEach((task) => {
+			if (task.call_audit?.dispositions) {
+				taskDispositionCounts.set(
+					task.call_audit.dispositions,
+					(taskDispositionCounts.get(task.call_audit.dispositions) || 0) + 1
+				);
+			}
+		});
+
+		const taskDispositionData = Array.from(taskDispositionCounts.entries()).map(([value, count], index) => ({
+			name: getDispositionLabel(value),
+			value: count,
+			fill: chartColors[index % chartColors.length],
+		}));
+
 		return {
 			metrics: filteredMetrics,
 			campaignData,
 			dispositionData,
 			taskStatusData,
+			taskDispositionData,
 			recentAudits: { data: filteredAudits.slice(0, 5) },
 			recentTasks: { data: filteredTasks.slice(0, 5) },
 		};
@@ -180,10 +211,10 @@ export function DashboardWrapper({
 				campaignData={filteredData.campaignData}
 				dispositionData={filteredData.dispositionData}
 				taskStatusData={filteredData.taskStatusData}
+				taskDispositionData={filteredData.taskDispositionData}
 				recentAudits={filteredData.recentAudits}
 				recentTasks={filteredData.recentTasks}
 			/>
 		</div>
 	);
 }
-

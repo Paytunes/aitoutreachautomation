@@ -73,20 +73,18 @@ export default function OpsReviewQueuePage() {
 	// Priority: High interest level (>=7), positive dispositions, or pending actionables
 	const reviewQueueAudits = useMemo(() => {
 		const negativeDispositions = ["not_interested", "wrong_company", "wrong_person", "dnd_requested"];
-		
+
 		return allAudits.filter((audit) => {
 			// High interest level calls
 			const hasHighInterest = (audit.interest_level || 0) >= 7;
-			
+
 			// Positive dispositions (not negative ones)
 			const hasPositiveDisposition =
-				audit.dispositions &&
-				!negativeDispositions.includes(audit.dispositions) &&
-				audit.dispositions !== "NA";
-			
+				audit.dispositions && !negativeDispositions.includes(audit.dispositions) && audit.dispositions !== "NA";
+
 			// Has pending actionables
 			const hasPendingActions = audit.actionables && audit.actionables.length > 0;
-			
+
 			// Include if high interest OR (positive disposition AND has pending actions)
 			return hasHighInterest || (hasPositiveDisposition && hasPendingActions);
 		});
@@ -112,14 +110,32 @@ export default function OpsReviewQueuePage() {
 
 	const getDispositionColor = (disposition?: string) => {
 		switch (disposition) {
-			case "Interested":
+			case "meeting_scheduled":
 				return "bg-green-500/10 text-green-700 border-green-500/30";
-			case "Not Interested":
-				return "bg-red-500/10 text-red-700 border-red-500/30";
-			case "Warm Lead":
+			case "whatsapp_requested":
 				return "bg-blue-500/10 text-blue-700 border-blue-500/30";
-			case "Claim Processed":
+			case "follow_up_needed":
+				return "bg-amber-500/10 text-amber-700 border-amber-500/30";
+			case "case_studies_requested":
 				return "bg-purple-500/10 text-purple-700 border-purple-500/30";
+			case "callback_requested":
+				return "bg-cyan-500/10 text-cyan-700 border-cyan-500/30";
+			case "share_deck":
+				return "bg-indigo-500/10 text-indigo-700 border-indigo-500/30";
+			case "voicemail":
+				return "bg-yellow-500/10 text-yellow-700 border-yellow-500/30";
+			case "technical_issues":
+				return "bg-orange-500/10 text-orange-700 border-orange-500/30";
+			case "wrong_company":
+				return "bg-red-500/10 text-red-700 border-red-500/30";
+			case "wrong_person":
+				return "bg-red-500/10 text-red-700 border-red-500/30";
+			case "not_interested":
+				return "bg-red-500/10 text-red-700 border-red-500/30";
+			case "dnd_requested":
+				return "bg-red-500/10 text-red-700 border-red-500/30";
+			case "NA":
+				return "bg-gray-500/10 text-gray-700 border-gray-500/30";
 			default:
 				return "bg-gray-500/10 text-gray-700 border-gray-500/30";
 		}
@@ -146,7 +162,7 @@ export default function OpsReviewQueuePage() {
 	};
 
 	return (
-		<div className="flex-1 space-y-6 p-6 lg:p-10">
+		<div className="flex-1 space-y-6 p-6">
 			{/* Header */}
 			<div className="flex flex-col gap-2">
 				<h1 className="text-3xl font-bold text-foreground">Ops Review Queue</h1>
@@ -198,10 +214,10 @@ export default function OpsReviewQueuePage() {
 
 			{/* Filters Card */}
 			<Card className="bg-card border-border">
-				<CardHeader>
+				<CardHeader className="pb-4">
 					<CardTitle className="text-foreground">Filters</CardTitle>
 				</CardHeader>
-				<CardContent className="space-y-4">
+				<CardContent className="pt-0">
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{/* Search Input */}
 						<div className="relative">
@@ -385,4 +401,3 @@ export default function OpsReviewQueuePage() {
 		</div>
 	);
 }
-

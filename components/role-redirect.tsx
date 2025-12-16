@@ -1,21 +1,34 @@
-"use client"
+"use client";
 
-import { useRole } from "@/lib/role-context"
-import { usePathname, useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useRole } from "@/lib/role-context";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 export function RoleRedirect() {
-	const { role } = useRole()
-	const pathname = usePathname()
-	const router = useRouter()
+	const { role } = useRole();
+	const pathname = usePathname();
+	const router = useRouter();
+	const hasRedirected = useRef(false);
 
 	useEffect(() => {
-		// Redirect Sales Team to their dashboard when accessing root
-		if (role === "sales_team" && pathname === "/") {
-			router.push("/sales-team")
+		// Reset redirect flag when pathname becomes "/" again
+		// This allows redirect to work if user navigates back to "/" after being redirected
+		if (pathname === "/") {
+			hasRedirected.current = false;
 		}
-	}, [role, pathname, router])
+	}, [pathname]);
 
-	return null
+	useEffect(() => {
+		// Only redirect from root path, and only once per pathname change
+		// Don't redirect if already redirected for this pathname visit
+		if (hasRedirected.current) return;
+
+		// Only redirect Sales Team from root to their dashboard
+		if (role === "sales_team" && pathname === "/") {
+			hasRedirected.current = true;
+			router.push("/sales-team");
+		}
+	}, [role, pathname, router]);
+
+	return null;
 }
-

@@ -19,9 +19,10 @@ interface DashboardChartsProps {
 	campaignData: Array<{ name: string; total_calls: number; answered_calls: number; converted_calls: number }>;
 	dispositionData: Array<{ name: string; value: number; fill: string }>;
 	taskStatusData: Array<{ name: string; count: number; fill: string }>;
+	taskDispositionData: Array<{ name: string; value: number; fill: string }>;
 }
 
-export function DashboardCharts({ campaignData, dispositionData, taskStatusData }: DashboardChartsProps) {
+export function DashboardCharts({ campaignData, dispositionData, taskStatusData, taskDispositionData }: DashboardChartsProps) {
 	return (
 		<>
 			{/* Charts Row */}
@@ -95,8 +96,9 @@ export function DashboardCharts({ campaignData, dispositionData, taskStatusData 
 				</Card>
 			</div>
 
-			{/* Task Status Chart */}
-			<div className="grid grid-cols-1 gap-6">
+			{/* Task Charts Row */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				{/* Task Status Chart */}
 				<Card className="bg-card border-border">
 					<CardHeader>
 						<CardTitle className="text-foreground">Task Status Overview</CardTitle>
@@ -115,6 +117,34 @@ export function DashboardCharts({ campaignData, dispositionData, taskStatusData 
 									dataKey="count"
 								>
 									{taskStatusData.map((entry, index) => (
+										<Cell key={`cell-${index}`} fill={entry.fill} />
+									))}
+								</Pie>
+								<Tooltip />
+							</PieChart>
+						</ResponsiveContainer>
+					</CardContent>
+				</Card>
+
+				{/* Tasks by Disposition */}
+				<Card className="bg-card border-border">
+					<CardHeader>
+						<CardTitle className="text-foreground">Tasks by Disposition</CardTitle>
+					</CardHeader>
+					<CardContent className="flex justify-center">
+						<ResponsiveContainer width="100%" height={250}>
+							<PieChart>
+								<Pie
+									data={taskDispositionData}
+									cx="50%"
+									cy="50%"
+									labelLine={false}
+									label={(entry: any) => `${entry.name}: ${entry.value}`}
+									outerRadius={80}
+									fill="#8884d8"
+									dataKey="value"
+								>
+									{taskDispositionData.map((entry, index) => (
 										<Cell key={`cell-${index}`} fill={entry.fill} />
 									))}
 								</Pie>

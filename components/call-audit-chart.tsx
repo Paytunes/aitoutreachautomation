@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 
 interface CallAuditChartProps {
 	interestLevel: number;
@@ -9,52 +8,24 @@ interface CallAuditChartProps {
 	disposition: string;
 }
 
-export function CallAuditChart({ interestLevel, callDuration, disposition }: CallAuditChartProps) {
-	// Prepare data for the donut chart showing interest level breakdown
-	const interestData = [
-		{
-			name: "Interest Level",
-			value: interestLevel,
-			fill: "#6366f1", // Indigo
-		},
-		{
-			name: "Remaining",
-			value: 10 - interestLevel,
-			fill: "#f3f4f6", // Very light gray for remaining portion (appears empty)
-		},
-	];
+export function CallAuditChart({ interestLevel }: CallAuditChartProps) {
+	const safeLevel = Math.max(0, Math.min(10, interestLevel || 0));
+	const pct = (safeLevel / 10) * 100;
 
 	return (
 		<div className="w-full">
-			{/* Interest Level Donut Chart */}
 			<Card className="bg-card border-border">
-				<CardHeader className="pb-2">
+				<CardHeader className="pb-3">
 					<CardTitle className="text-sm font-medium text-foreground">Interest Level</CardTitle>
 				</CardHeader>
-				<CardContent>
-					<ResponsiveContainer width="100%" height={120}>
-						<PieChart>
-							<Pie
-								data={interestData}
-								cx="50%"
-								cy="50%"
-								innerRadius={30}
-								outerRadius={45}
-								startAngle={90}
-								endAngle={-270}
-								dataKey="value"
-							>
-								{interestData.map((entry, index) => (
-									<Cell key={`cell-${index}`} fill={entry.fill} />
-								))}
-							</Pie>
-							<Tooltip />
-						</PieChart>
-					</ResponsiveContainer>
-					<div className="text-center mt-1">
-						<p className="text-xl font-bold text-foreground">{interestLevel}/10</p>
-						<p className="text-xs text-muted-foreground">Interest Score</p>
+				<CardContent className="pt-0 space-y-2">
+					<div className="flex items-center gap-3">
+						<div className="w-full bg-muted rounded h-2">
+							<div className="bg-primary rounded h-2" style={{ width: `${pct}%` }} />
+						</div>
+						<span className="text-sm font-medium text-foreground">{safeLevel}/10</span>
 					</div>
+					<p className="text-xs text-muted-foreground">Interest score based on call analysis</p>
 				</CardContent>
 			</Card>
 		</div>

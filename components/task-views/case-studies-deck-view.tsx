@@ -1,11 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { FileText, Mail, Upload, Link as LinkIcon } from "lucide-react"
+import { FileText, Mail, Upload, Link as LinkIcon, X } from "lucide-react"
 import type { TaskView } from "@/lib/types"
 
 interface CaseStudiesDeckViewProps {
@@ -13,73 +14,22 @@ interface CaseStudiesDeckViewProps {
 }
 
 export function CaseStudiesDeckView({ task }: CaseStudiesDeckViewProps) {
+	const [attachments, setAttachments] = useState<File[]>([])
+
+	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const files = Array.from(event.target.files || [])
+		if (files.length) {
+			setAttachments((prev) => [...prev, ...files])
+			event.target.value = ""
+		}
+	}
+
+	const removeAttachment = (name: string) => {
+		setAttachments((prev) => prev.filter((file) => file.name !== name))
+	}
+
 	return (
 		<div className="space-y-6">
-			<Card className="bg-card border-border">
-				<CardHeader>
-					<CardTitle className="text-foreground">Select Documents to Send</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="space-y-3">
-						<div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-							<Checkbox id="case-study-1" className="mt-1" />
-							<div className="flex-1">
-								<Label htmlFor="case-study-1" className="text-foreground cursor-pointer">
-									Case Study: Enterprise Success Story
-								</Label>
-								<p className="text-xs text-muted-foreground mt-1">
-									PDF - 2.4 MB - Last updated: Nov 15, 2024
-								</p>
-							</div>
-							<FileText className="w-5 h-5 text-muted-foreground" />
-						</div>
-						<div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-							<Checkbox id="case-study-2" className="mt-1" />
-							<div className="flex-1">
-								<Label htmlFor="case-study-2" className="text-foreground cursor-pointer">
-									Case Study: SMB Growth Case
-								</Label>
-								<p className="text-xs text-muted-foreground mt-1">
-									PDF - 1.8 MB - Last updated: Nov 20, 2024
-								</p>
-							</div>
-							<FileText className="w-5 h-5 text-muted-foreground" />
-						</div>
-						<div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-							<Checkbox id="product-deck" className="mt-1" />
-							<div className="flex-1">
-								<Label htmlFor="product-deck" className="text-foreground cursor-pointer">
-									Product Overview Deck
-								</Label>
-								<p className="text-xs text-muted-foreground mt-1">
-									PDF - 3.2 MB - Last updated: Dec 1, 2024
-								</p>
-							</div>
-							<FileText className="w-5 h-5 text-muted-foreground" />
-						</div>
-						<div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-							<Checkbox id="pricing-sheet" className="mt-1" />
-							<div className="flex-1">
-								<Label htmlFor="pricing-sheet" className="text-foreground cursor-pointer">
-									Pricing Sheet 2024
-								</Label>
-								<p className="text-xs text-muted-foreground mt-1">
-									PDF - 856 KB - Last updated: Nov 28, 2024
-								</p>
-							</div>
-							<FileText className="w-5 h-5 text-muted-foreground" />
-						</div>
-					</div>
-
-					<div className="pt-4 border-t border-border">
-						<Button variant="outline" className="border-border text-foreground hover:bg-muted">
-							<Upload className="w-4 h-4 mr-2" />
-							Upload Custom Document
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-
 			<Card className="bg-card border-border">
 				<CardHeader>
 					<CardTitle className="text-foreground">Email Content</CardTitle>
@@ -126,6 +76,44 @@ Best regards,
 								className="w-full px-3 py-2 pl-10 rounded-md border border-border bg-background text-foreground"
 							/>
 						</div>
+					</div>
+
+					<div className="space-y-2">
+						<div className="flex items-center justify-between">
+							<Label className="text-foreground">Attachments</Label>
+							<label className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background text-foreground cursor-pointer hover:bg-muted transition-colors">
+								<Upload className="w-4 h-4" />
+								<span className="text-sm">Upload files</span>
+								<input
+									type="file"
+									multiple
+									className="hidden"
+									onChange={handleFileChange}
+								/>
+							</label>
+						</div>
+						{attachments.length === 0 ? (
+							<p className="text-sm text-muted-foreground">No attachments added.</p>
+						) : (
+							<div className="flex flex-wrap gap-2">
+								{attachments.map((file) => (
+									<div
+										key={file.name}
+										className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-muted/50"
+									>
+										<FileText className="w-4 h-4 text-muted-foreground" />
+										<span className="text-sm text-foreground">{file.name}</span>
+										<button
+											type="button"
+											onClick={() => removeAttachment(file.name)}
+											className="text-muted-foreground hover:text-foreground"
+										>
+											<X className="w-4 h-4" />
+										</button>
+									</div>
+								))}
+							</div>
+						)}
 					</div>
 				</CardContent>
 			</Card>

@@ -1,10 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { MessageSquare, Phone, User, Paperclip } from "lucide-react"
+import { MessageSquare, Phone, Paperclip, X, FileText } from "lucide-react"
 import type { TaskView } from "@/lib/types"
 
 interface WhatsAppViewProps {
@@ -12,6 +13,20 @@ interface WhatsAppViewProps {
 }
 
 export function WhatsAppView({ task }: WhatsAppViewProps) {
+	const [attachments, setAttachments] = useState<File[]>([])
+
+	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const files = Array.from(event.target.files || [])
+		if (files.length) {
+			setAttachments((prev) => [...prev, ...files])
+			event.target.value = ""
+		}
+	}
+
+	const removeAttachment = (name: string) => {
+		setAttachments((prev) => prev.filter((file) => file.name !== name))
+	}
+
 	return (
 		<div className="space-y-6">
 			<Card className="bg-card border-border">
@@ -60,76 +75,33 @@ Best regards,
 							<p>Supports emojis and formatting</p>
 						</div>
 					</div>
-					<div className="space-y-2">
-						<Label className="text-foreground">Message Templates</Label>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-							<Button
-								variant="outline"
-								className="border-border text-foreground hover:bg-muted text-left justify-start h-auto py-2"
-							>
-								<div className="text-left">
-									<p className="text-sm font-medium">Follow-up Template</p>
-									<p className="text-xs text-muted-foreground">Quick follow-up message</p>
-								</div>
-							</Button>
-							<Button
-								variant="outline"
-								className="border-border text-foreground hover:bg-muted text-left justify-start h-auto py-2"
-							>
-								<div className="text-left">
-									<p className="text-sm font-medium">Meeting Reminder</p>
-									<p className="text-xs text-muted-foreground">Remind about scheduled meeting</p>
-								</div>
-							</Button>
-							<Button
-								variant="outline"
-								className="border-border text-foreground hover:bg-muted text-left justify-start h-auto py-2"
-							>
-								<div className="text-left">
-									<p className="text-sm font-medium">Document Share</p>
-									<p className="text-xs text-muted-foreground">Share documents link</p>
-								</div>
-							</Button>
-							<Button
-								variant="outline"
-								className="border-border text-foreground hover:bg-muted text-left justify-start h-auto py-2"
-							>
-								<div className="text-left">
-									<p className="text-sm font-medium">Thank You</p>
-									<p className="text-xs text-muted-foreground">Thank you message</p>
-								</div>
-							</Button>
-						</div>
-					</div>
-					<div className="pt-2">
-						<Button variant="outline" className="border-border text-foreground hover:bg-muted">
-							<Paperclip className="w-4 h-4 mr-2" />
-							Attach File / Media
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card className="bg-card border-border">
-				<CardHeader>
-					<CardTitle className="text-foreground">Contact Information</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-3">
-						<div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
-							<User className="w-5 h-5 text-muted-foreground" />
-							<div>
-								<p className="text-sm font-semibold text-foreground">Lead Name</p>
-								<p className="text-sm text-muted-foreground">From call audit data</p>
+					
+					<div className="space-y-2 pt-2">
+						<label className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background text-foreground cursor-pointer hover:bg-muted transition-colors w-fit">
+							<Paperclip className="w-4 h-4" />
+							<span className="text-sm">Attach File / Media</span>
+							<input type="file" multiple className="hidden" onChange={handleFileChange} />
+						</label>
+						{attachments.length > 0 && (
+							<div className="flex flex-wrap gap-2">
+								{attachments.map((file) => (
+									<div
+										key={file.name}
+										className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-muted/50"
+									>
+										<FileText className="w-4 h-4 text-muted-foreground" />
+										<span className="text-sm text-foreground">{file.name}</span>
+										<button
+											type="button"
+											onClick={() => removeAttachment(file.name)}
+											className="text-muted-foreground hover:text-foreground"
+										>
+											<X className="w-4 h-4" />
+										</button>
+									</div>
+								))}
 							</div>
-						</div>
-						<div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
-							<Phone className="w-5 h-5 text-muted-foreground" />
-							<div>
-								<p className="text-sm font-semibold text-foreground">Phone Number</p>
-								<p className="text-sm text-muted-foreground">From call audit data</p>
-							</div>
-						</div>
+						)}
 					</div>
 				</CardContent>
 			</Card>

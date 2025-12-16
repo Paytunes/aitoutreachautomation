@@ -6,11 +6,12 @@ import { getUserTypeFromToken } from "@/lib/auth";
 export default async function DashboardPage() {
 	// Get user type from token
 	const userType = await getUserTypeFromToken();
-	const [metrics, recentAudits, recentTasks, campaigns] = await Promise.all([
+	const [metrics, recentAudits, recentTasks, campaigns, allTasks] = await Promise.all([
 		getDashboardMetrics(),
 		getCallAudits(1, 5),
 		getTasks(1, 5),
 		getCampaigns(),
+		getTasks(1, 1000), // Fetch all tasks to calculate accurate status counts
 	]);
 
 	// Prepare chart data
@@ -68,14 +69,23 @@ export default async function DashboardPage() {
 		fill: chartColors[index % chartColors.length],
 	}));
 
+	// Calculate task status data from actual tasks (matching dashboard-wrapper.tsx logic)
 	const taskStatusData = [
 		{
-			name: "Pending",
-			count: metrics.total_tasks - metrics.completed_tasks - 1,
+			name: "Todo",
+			count: allTasks.data.filter((t) => t.task_status === "todo").length,
 			fill: "#f59e0b", // Amber
 		},
-		{ name: "In Progress", count: 1, fill: "#3b82f6" }, // Blue
-		{ name: "Completed", count: metrics.completed_tasks, fill: "#22c55e" }, // Green
+		{
+			name: "In Progress",
+			count: allTasks.data.filter((t) => t.task_status === "in-progress").length,
+			fill: "#3b82f6", // Blue
+		},
+		{
+			name: "Completed",
+			count: allTasks.data.filter((t) => t.task_status === "completed").length,
+			fill: "#22c55e", // Green
+		},
 	];
 
 	return (

@@ -1,102 +1,214 @@
-import { getDashboardMetrics, getCallAudits, getTasks, getCampaigns } from "@/lib/mock-api";
-import { DashboardWrapper } from "@/components/dashboard-wrapper";
-import { DashboardHeader } from "@/components/dashboard-header";
-import { getUserTypeFromToken } from "@/lib/auth";
+"use client";
 
-export default async function DashboardPage() {
-	// Get user type from token
-	const userType = await getUserTypeFromToken();
-	const [metrics, recentAudits, recentTasks, campaigns, allTasks] = await Promise.all([
-		getDashboardMetrics(),
-		getCallAudits(1, 5),
-		getTasks(1, 5),
-		getCampaigns(),
-		getTasks(1, 1000), // Fetch all tasks to calculate accurate status counts
-	]);
+import { useState, useEffect } from "react";
+import { getTasks, getUnifiedItems } from "@/lib/mock-api";
+import type { TaskView, UnifiedItem } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { CheckSquare, TrendingUp, Play, Circle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-	// Prepare chart data
-	const campaignData = campaigns.map((c) => {
-		const totalCalls = Math.floor(Math.random() * 500) + 200;
-		const answeredCalls = Math.floor(totalCalls * 0.75);
-		const convertedCalls = Math.floor(answeredCalls * 0.35);
+export default function Dashboard() {
+	const router = useRouter();
+	const [userTasks, setUserTasks] = useState<TaskView[]>([]);
+	const [allTasks, setAllTasks] = useState<TaskView[]>([]);
+	const [userUnifiedItems, setUserUnifiedItems] = useState<UnifiedItem[]>([]);
+	const [loading, setLoading] = useState(false);
+	// In real app, this would come from auth context/token
+	// For now, using mock user ID - in production, get from token
+	const currentUserId = "1"; // Mock current user ID
 
-		return {
-			name: c.name,
-			total_calls: totalCalls,
-			answered_calls: answeredCalls,
-			converted_calls: convertedCalls,
+	useEffect(() => {
+		const loadData = async () => {
+			setLoading(true);
+			// Load user-specific tasks
+			const userTasksResult = await getTasks(1, 100, {
+				employee_id: currentUserId,
+			});
+			setUserTasks(userTasksResult.data);
+
+			// Load unified items (tasks and call audits) for user - for Play button
+			const unifiedItemsResult = await getUnifiedItems(1, 1000, {
+				employee_id: currentUserId,
+			});
+			// Sort by created_at ascending to get oldest first - but getUnifiedItems already sorts descending
+			// So we need to reverse it to get oldest first
+			const sortedItems = [...unifiedItemsResult.data].reverse();
+			setUserUnifiedItems(sortedItems);
+
+			// Load overall data for summary
+			const allTasksResult = await getTasks(1, 1000);
+			setAllTasks(allTasksResult.data);
+
+			setLoading(false);
 		};
-	});
+		loadData();
+	}, [currentUserId]);
 
-	// Disposition choices from backend
-	const DISPOSITION_CHOICES = [
-		["meeting_scheduled", "Meeting Scheduled"],
-		["whatsapp_requested", "Whatsapp Requested"],
-		["follow_up_needed", "Follow Up Needed"],
-		["case_studies_requested", "Case Studies Requested"],
-		["callback_requested", "Callback Requested"],
-		["share_deck", "Share Deck"],
-		["voicemail", "Voicemail"],
-		["technical_issues", "Technical Issues"],
-		["wrong_company", "Wrong Company"],
-		["wrong_person", "Wrong Person"],
-		["not_interested", "Not Interested"],
-		["dnd_requested", "DND Requested"],
-		["NA", "NA"],
-	] as const;
+	// User-level metrics
+	const userAssignedTasks = userTasks;
+	const userTodoTasks = userTasks.filter((t) => t.task_status === "todo");
+	const userCompletedTasks = userTasks.filter((t) => t.task_status === "completed");
 
-	// Generate disposition data based on backend choices
-	// Using actual color values instead of CSS variables for recharts compatibility
-	const chartColors = [
-		"#6366f1", // Indigo
-		"#22c55e", // Green
-		"#f59e0b", // Amber
-		"#ef4444", // Red
-		"#8b5cf6", // Purple
-		"#06b6d4", // Cyan
-		"#ec4899", // Pink
-		"#f97316", // Orange
-		"#84cc16", // Lime
-		"#14b8a6", // Teal
-		"#3b82f6", // Blue
-		"#a855f7", // Violet
-		"#10b981", // Emerald
-	];
+	// Overall metrics
+	const overallTotalTasks = allTasks.length;
+	const overallCompletedTasks = allTasks.filter((t) => t.task_status === "completed").length;
 
-	const dispositionData = DISPOSITION_CHOICES.map(([value, label], index) => ({
-		name: label, // Use label for display
-		value: Math.floor(Math.random() * 30) + 5, // Random values for demo
-		fill: chartColors[index % chartColors.length],
-	}));
+	// Get first item (task or call audit) from unified list for Play button
+	const firstItem = userUnifiedItems.length > 0 ? userUnifiedItems[0] : null;
 
-	// Calculate task status data from actual tasks (matching dashboard-wrapper.tsx logic)
-	const taskStatusData = [
-		{
-			name: "Todo",
-			count: allTasks.data.filter((t) => t.task_status === "todo").length,
-			fill: "#f59e0b", // Amber
-		},
-		{
-			name: "Completed",
-			count: allTasks.data.filter((t) => t.task_status === "completed").length,
-			fill: "#22c55e", // Green
-		},
-	];
+	const handlePlayClick = () => {
+		if (firstItem) {
+			router.push(`/tasks/${firstItem.id}`);
+		}
+	};
+
+	// Get display name for the first item
+	const getFirstItemDisplayName = () => {
+		if (!firstItem) return null;
+		if (firstItem.type === "task" && firstItem.task) {
+			return firstItem.task.actionable.name;
+		} else if (firstItem.type === "call_audit" && firstItem.call_audit) {
+			return firstItem.call_audit.lead.name;
+		}
+		return null;
+	};
 
 	return (
 		<div className="flex-1 space-y-8 p-6 lg:p-10">
-			{/* Header */}
-			<DashboardHeader />
+			{/* Overall Summary */}
+			<Card className="bg-card border-border">
+				<CardHeader>
+					<CardTitle className="text-foreground text-xl">Overall Summary</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						<div className="flex items-start justify-between p-4 rounded-lg bg-muted/30">
+							<div>
+								<p className="text-sm font-medium text-muted-foreground">Total Tasks</p>
+								<p className="text-2xl font-bold text-foreground mt-1">
+									{loading ? "—" : overallTotalTasks}
+								</p>
+							</div>
+							<CheckSquare className="w-6 h-6 text-primary" />
+						</div>
+						<div className="flex items-start justify-between p-4 rounded-lg bg-muted/30">
+							<div>
+								<p className="text-sm font-medium text-muted-foreground">Completed Tasks</p>
+								<p className="text-2xl font-bold text-foreground mt-1">
+									{loading ? "—" : overallCompletedTasks}
+								</p>
+							</div>
+							<CheckSquare className="w-6 h-6 text-green-600" />
+						</div>
+						<div className="flex items-start justify-between p-4 rounded-lg bg-muted/30">
+							<div>
+								<p className="text-sm font-medium text-muted-foreground">Completion Rate</p>
+								<p className="text-2xl font-bold text-foreground mt-1">
+									{loading
+										? "—"
+										: overallTotalTasks > 0
+										? Math.round((overallCompletedTasks / overallTotalTasks) * 100)
+										: 0}
+									%
+								</p>
+							</div>
+							<TrendingUp className="w-6 h-6 text-green-600" />
+						</div>
+					</div>
+				</CardContent>
+			</Card>
 
-			<DashboardWrapper
-				userType={userType || "sales_ops"}
-				initialMetrics={metrics}
-				initialCampaignData={campaignData}
-				initialDispositionData={dispositionData}
-				initialTaskStatusData={taskStatusData}
-				initialRecentAudits={recentAudits}
-				initialRecentTasks={recentTasks}
-			/>
+			{/* User Level Summary */}
+			<Card className="bg-card border-border">
+				<CardHeader>
+					<CardTitle className="text-foreground text-xl">Your Summary</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						<Link href="/tasks" className="block h-full">
+							<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer h-full">
+								<CardContent className="pt-6 h-full flex flex-col">
+									<div className="flex items-start justify-between flex-1">
+										<div className="flex-1">
+											<p className="text-sm font-medium text-muted-foreground">Total Assigned</p>
+											<p className="text-3xl font-bold text-foreground mt-2">
+												{userAssignedTasks.length}
+											</p>
+											<p className="text-xs text-muted-foreground mt-1 opacity-0">Placeholder</p>
+										</div>
+										<CheckSquare className="w-8 h-8 text-primary" />
+									</div>
+								</CardContent>
+							</Card>
+						</Link>
+
+						<Link href="/tasks?status=todo" className="block h-full">
+							<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer h-full">
+								<CardContent className="pt-6 h-full flex flex-col">
+									<div className="flex items-start justify-between flex-1">
+										<div className="flex-1">
+											<p className="text-sm font-medium text-muted-foreground">Todo</p>
+											<p className="text-3xl font-bold text-foreground mt-2">
+												{userTodoTasks.length}
+											</p>
+											<p className="text-xs text-muted-foreground mt-1 opacity-0">Placeholder</p>
+										</div>
+										<Circle className="w-8 h-8 text-yellow-600" />
+									</div>
+								</CardContent>
+							</Card>
+						</Link>
+
+						<Link href="/tasks?status=completed" className="block h-full">
+							<Card className="bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer h-full">
+								<CardContent className="pt-6 h-full flex flex-col">
+									<div className="flex items-start justify-between flex-1">
+										<div className="flex-1">
+											<p className="text-sm font-medium text-muted-foreground">Completed</p>
+											<p className="text-3xl font-bold text-foreground mt-2">
+												{userCompletedTasks.length}
+											</p>
+											<p className="text-xs text-muted-foreground mt-1">
+												{userAssignedTasks.length > 0
+													? Math.round(
+															(userCompletedTasks.length / userAssignedTasks.length) * 100
+													  )
+													: 0}
+												% completion rate
+											</p>
+										</div>
+										<TrendingUp className="w-8 h-8 text-green-600" />
+									</div>
+								</CardContent>
+							</Card>
+						</Link>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Big Play Button */}
+			{firstItem && (
+				<Card className="bg-card border-border">
+					<CardContent className="pt-6">
+						<div className="flex flex-col items-center justify-center py-12">
+							<Button
+								onClick={handlePlayClick}
+								size="lg"
+								className="w-full max-w-md h-20 text-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg cursor-pointer"
+							>
+								<Play className="w-8 h-8 mr-3" />
+								Start Working on Tasks
+							</Button>
+							{getFirstItemDisplayName() && (
+								<p className="text-sm text-muted-foreground mt-4">Next: {getFirstItemDisplayName()}</p>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+			)}
 		</div>
 	);
 }

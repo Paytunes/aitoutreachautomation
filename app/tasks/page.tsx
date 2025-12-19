@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getTasks, getEmployees } from "@/lib/mock-api";
-import { useRole } from "@/lib/role-context";
-import type { TaskView } from "@/lib/types";
+import { getUnifiedItems, getEmployees } from "@/lib/mock-api";
+// COMMENTED OUT: Multiple user type role context
+// import { useRole } from "@/lib/role-context";
+import type { UnifiedItem, TaskView } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 
-type SortColumn = "action" | "description" | "assignee" | "status" | "updated" | "created";
+type SortColumn = "action" | "description" | "assignee" | "status" | "created";
 type SortDirection = "asc" | "desc";
 
 interface SortConfig {
@@ -25,9 +26,10 @@ interface SortConfig {
 export default function TasksPage() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
-	const { role } = useRole();
+	// COMMENTED OUT: Multiple user type role logic
+	// const { role } = useRole();
 
-	const [tasks, setTasks] = useState<TaskView[]>([]);
+	const [items, setItems] = useState<UnifiedItem[]>([]);
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
 	const [loading, setLoading] = useState(false);
@@ -38,18 +40,35 @@ export default function TasksPage() {
 	// Filter states
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState("");
-	const [employeeFilter, setEmployeeFilter] = useState("");
+	const [typeFilter, setTypeFilter] = useState<"all" | "call_audit" | "task">("all");
 	const [employees, setEmployees] = useState<ReturnType<typeof getEmployees>>([]);
 
-	const [sort, setSort] = useState<SortConfig>({ column: "created", direction: "asc" });
+	const [sort, setSort] = useState<SortConfig>({ column: "created", direction: "desc" });
 
 	const limit = 10;
 
 	// Format task status to Title Case
 	const formatTaskStatus = (status: string): string => {
+		if (!status) return "";
+		// Handle common statuses
+		if (status === "todo") return "Todo";
+		if (status === "completed") return "Completed";
+		// For other statuses with hyphens or underscores
 		return status
-			.split("-")
-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.split(/[-_]/)
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+			.join(" ");
+	};
+
+	// Format disposition to Title Case
+	const formatDisposition = (disposition?: string): string => {
+		if (!disposition) return "—";
+		// Handle special case
+		if (disposition === "NA") return "NA";
+		// Convert snake_case to Title Case
+		return disposition
+			.split("_")
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
 			.join(" ");
 	};
 
@@ -94,7 +113,7 @@ export default function TasksPage() {
 	// Sync URL params with filter state whenever URL changes
 	useEffect(() => {
 		const status = searchParams.get("status");
-		const employeeId = searchParams.get("employee_id");
+		const type = searchParams.get("type");
 
 		// Update status filter from URL
 		if (status) {
@@ -103,60 +122,105 @@ export default function TasksPage() {
 			setStatusFilter("");
 		}
 
-		// Only set employee filter for non-sales_team users
-		if (employeeId && role !== "sales_team") {
-			setEmployeeFilter(employeeId);
+		// Update type filter from URL
+		if (type && (type === "call_audit" || type === "task" || type === "all")) {
+			setTypeFilter(type);
 		} else {
-			setEmployeeFilter("");
+			setTypeFilter("all");
 		}
-	}, [searchParams, role]);
+	}, [searchParams]);
 
-	// Load tasks
+	// Load unified items (both call audits and tasks)
 	useEffect(() => {
-		const loadTasks = async () => {
+		const loadItems = async () => {
 			setLoading(true);
-			// For Sales Team, automatically filter by current user (ignore employeeFilter from URL)
-			// For Sales Ops, use employeeFilter from URL if provided
-			const result = await getTasks(page, limit, {
+			const result = await getUnifiedItems(page, limit, {
+				type: typeFilter,
 				status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
-				employee_id:
-					role === "sales_team"
-						? currentUserId
-						: employeeFilter && employeeFilter !== "all"
-						? employeeFilter
-						: undefined,
+				employee_id: currentUserId, // Filter tasks by current user
 			});
-			setTasks(result.data);
+			setItems(result.data);
 			setTotal(result.total);
 			setLoading(false);
 		};
-		loadTasks();
-	}, [page, statusFilter, employeeFilter, role, currentUserId]);
+		loadItems();
+	}, [page, statusFilter, typeFilter, currentUserId]);
 
 	// Filter by search query
-	const filteredTasks = tasks.filter(
-		(task) =>
-			task.actionable.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-	);
+	const filteredItems = items.filter((item) => {
+		if (!searchQuery) return true;
+		const query = searchQuery.toLowerCase();
+		if (item.type === "task" && item.task) {
+			return (
+				item.task.actionable.name.toLowerCase().includes(query) ||
+				item.task.description?.toLowerCase().includes(query) ||
+				item.task.employee.name.toLowerCase().includes(query)
+			);
+		} else if (item.type === "call_audit" && item.call_audit) {
+			return (
+				item.call_audit.lead.name.toLowerCase().includes(query) ||
+				item.call_audit.campaign.name.toLowerCase().includes(query)
+			);
+		}
+		return false;
+	});
 
-	const sortedTasks = [...filteredTasks].sort((a, b) => {
+	const sortedItems = [...filteredItems].sort((a, b) => {
 		let comparison = 0;
 		switch (sort.column) {
 			case "action":
-				comparison = a.actionable.name.localeCompare(b.actionable.name);
+				if (a.type === "task" && a.task && b.type === "task" && b.task) {
+					comparison = a.task.actionable.name.localeCompare(b.task.actionable.name);
+				} else if (a.type === "call_audit" && a.call_audit && b.type === "call_audit" && b.call_audit) {
+					comparison = a.call_audit.lead.name.localeCompare(b.call_audit.lead.name);
+				} else {
+					comparison = a.type.localeCompare(b.type);
+				}
 				break;
 			case "description":
-				comparison = (a.description || "").localeCompare(b.description || "");
+				const aDesc =
+					a.type === "task" && a.task
+						? a.task.description || ""
+						: a.type === "call_audit" && a.call_audit
+						? a.call_audit.call_summary || ""
+						: "";
+				const bDesc =
+					b.type === "task" && b.task
+						? b.task.description || ""
+						: b.type === "call_audit" && b.call_audit
+						? b.call_audit.call_summary || ""
+						: "";
+				comparison = aDesc.localeCompare(bDesc);
 				break;
 			case "assignee":
-				comparison = a.employee.name.localeCompare(b.employee.name);
+				const aAssignee =
+					a.type === "task" && a.task
+						? a.task.employee.name
+						: a.type === "call_audit" && a.call_audit
+						? a.call_audit.lead.name
+						: "";
+				const bAssignee =
+					b.type === "task" && b.task
+						? b.task.employee.name
+						: b.type === "call_audit" && b.call_audit
+						? b.call_audit.lead.name
+						: "";
+				comparison = aAssignee.localeCompare(bAssignee);
 				break;
 			case "status":
-				comparison = a.task_status.localeCompare(b.task_status);
-				break;
-			case "updated":
-				comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+				const aStatus =
+					a.type === "task" && a.task
+						? a.task.task_status
+						: a.type === "call_audit" && a.call_audit
+						? a.call_audit.dispositions || ""
+						: "";
+				const bStatus =
+					b.type === "task" && b.task
+						? b.task.task_status
+						: b.type === "call_audit" && b.call_audit
+						? b.call_audit.dispositions || ""
+						: "";
+				comparison = aStatus.localeCompare(bStatus);
 				break;
 			case "created":
 				comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -210,7 +274,7 @@ export default function TasksPage() {
 						<div className="relative">
 							<Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
 							<Input
-								placeholder="Search by action or description..."
+								placeholder="Search by name, action, or description..."
 								value={searchQuery}
 								onChange={(e) => {
 									setSearchQuery(e.target.value);
@@ -220,7 +284,37 @@ export default function TasksPage() {
 							/>
 						</div>
 
-						{/* Status Filter */}
+						{/* Type Filter */}
+						<div className="w-full">
+							<Select
+								value={typeFilter}
+								onValueChange={(value) => {
+									const newType = value as "all" | "call_audit" | "task";
+									setTypeFilter(newType);
+									setPage(1);
+									// Update URL
+									const params = new URLSearchParams(searchParams.toString());
+									if (newType !== "all") {
+										params.set("type", newType);
+									} else {
+										params.delete("type");
+									}
+									const queryString = params.toString();
+									router.replace(queryString ? `/tasks?${queryString}` : "/tasks", { scroll: false });
+								}}
+							>
+								<SelectTrigger className="bg-background text-foreground border-border w-full">
+									<SelectValue placeholder="Filter by type" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">All Types</SelectItem>
+									<SelectItem value="call_audit">Call Audits</SelectItem>
+									<SelectItem value="task">Tasks</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Status Filter (only applies to tasks) */}
 						<div className="w-full">
 							<Select
 								value={statusFilter || "all"}
@@ -250,8 +344,8 @@ export default function TasksPage() {
 							</Select>
 						</div>
 
-						{/* Assignee Filter - Only show for Sales Ops */}
-						{role !== "sales_team" && (
+						{/* COMMENTED OUT: Assignee Filter - Only show for Sales Ops (multiple user types) */}
+						{/* {role !== "sales_team" && (
 							<div className="w-full">
 								<Select
 									value={employeeFilter || "all"}
@@ -285,14 +379,14 @@ export default function TasksPage() {
 									</SelectContent>
 								</Select>
 							</div>
-						)}
+						)} */}
 
 						{/* Reset Button */}
 						<Button
 							onClick={() => {
 								setSearchQuery("");
 								setStatusFilter("");
-								setEmployeeFilter("");
+								setTypeFilter("all");
 								setPage(1);
 								router.replace("/tasks", { scroll: false });
 							}}
@@ -309,7 +403,7 @@ export default function TasksPage() {
 			<Card className="bg-card border-border">
 				<CardHeader>
 					<CardTitle className="text-foreground">
-						Tasks ({sortedTasks.length} of {total})
+						Items ({sortedItems.length} of {total})
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -318,22 +412,23 @@ export default function TasksPage() {
 							<div className="flex items-center justify-center py-12">
 								<p className="text-muted-foreground">Loading...</p>
 							</div>
-						) : sortedTasks.length === 0 ? (
+						) : sortedItems.length === 0 ? (
 							<div className="flex items-center justify-center py-12">
-								<p className="text-muted-foreground">No tasks found</p>
+								<p className="text-muted-foreground">No items found</p>
 							</div>
 						) : (
 							<>
 								<Table>
 									<TableHeader>
 										<TableRow className="border-border">
+											<TableHead className="text-foreground">Type</TableHead>
 											<TableHead className="text-foreground">
 												<button
 													type="button"
 													onClick={() => handleSort("action")}
 													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
 												>
-													Action
+													Name / Action
 													{getSortIcon("action")}
 												</button>
 											</TableHead>
@@ -343,7 +438,7 @@ export default function TasksPage() {
 													onClick={() => handleSort("description")}
 													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
 												>
-													Description
+													Description / Summary
 													{getSortIcon("description")}
 												</button>
 											</TableHead>
@@ -353,7 +448,7 @@ export default function TasksPage() {
 													onClick={() => handleSort("assignee")}
 													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
 												>
-													Assignee
+													Assignee / Lead
 													{getSortIcon("assignee")}
 												</button>
 											</TableHead>
@@ -363,18 +458,8 @@ export default function TasksPage() {
 													onClick={() => handleSort("status")}
 													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
 												>
-													Status
+													Status / Disposition
 													{getSortIcon("status")}
-												</button>
-											</TableHead>
-											<TableHead className="text-foreground">
-												<button
-													type="button"
-													onClick={() => handleSort("updated")}
-													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
-												>
-													Updated
-													{getSortIcon("updated")}
 												</button>
 											</TableHead>
 											<TableHead className="text-foreground">
@@ -390,39 +475,95 @@ export default function TasksPage() {
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{sortedTasks.map((task) => (
-											<TableRow key={task.id} className="border-border hover:bg-muted/50">
-												<TableCell className="font-medium">
-													<Link
-														href={`/tasks/${task.id}`}
-														className="text-primary hover:underline"
-													>
-														{task.actionable.name}
-													</Link>
-												</TableCell>
-												<TableCell
-													className="text-sm max-w-xs truncate"
-													title={task.description}
-												>
-													{task.description || "—"}
-												</TableCell>
-												<TableCell className="text-sm">{task.employee.name}</TableCell>
-												<TableCell>
-													<Badge
-														variant="outline"
-														className={getStatusColor(task.task_status)}
-													>
-														{formatTaskStatus(task.task_status)}
-													</Badge>
-												</TableCell>
-												<TableCell className="text-xs text-muted-foreground">
-													{formatRelativeTime(task.updated_at)}
-												</TableCell>
-												<TableCell className="text-xs text-muted-foreground">
-													{formatRelativeTime(task.created_at)}
-												</TableCell>
-											</TableRow>
-										))}
+										{sortedItems.map((item) => {
+											if (item.type === "task" && item.task) {
+												return (
+													<TableRow key={item.id} className="border-border hover:bg-muted/50">
+														<TableCell>
+															<Badge
+																variant="outline"
+																className="bg-blue-500/10 text-blue-700 border-blue-500/30"
+															>
+																Task
+															</Badge>
+														</TableCell>
+														<TableCell className="font-medium">
+															<Link
+																href={`/tasks/${item.task.id}`}
+																className="text-primary hover:underline"
+															>
+																{item.task.actionable.name}
+															</Link>
+														</TableCell>
+														<TableCell
+															className="text-sm max-w-xs truncate"
+															title={item.task.description}
+														>
+															{item.task.description || "—"}
+														</TableCell>
+														<TableCell className="text-sm">
+															{item.task.employee.name}
+														</TableCell>
+														<TableCell>
+															<Badge
+																variant="outline"
+																className={getStatusColor(item.task.task_status)}
+															>
+																{formatTaskStatus(item.task.task_status)}
+															</Badge>
+														</TableCell>
+														<TableCell className="text-xs text-muted-foreground">
+															{formatRelativeTime(item.task.created_at)}
+														</TableCell>
+													</TableRow>
+												);
+											} else if (item.type === "call_audit" && item.call_audit) {
+												const audit = item.call_audit;
+												return (
+													<TableRow key={item.id} className="border-border hover:bg-muted/50">
+														<TableCell>
+															<Badge
+																variant="outline"
+																className="bg-purple-500/10 text-purple-700 border-purple-500/30"
+															>
+																Call Audit
+															</Badge>
+														</TableCell>
+														<TableCell className="font-medium">
+															<Link
+																href={`/tasks/${audit.id}`}
+																className="text-primary hover:underline"
+															>
+																{audit.lead.name}
+															</Link>
+														</TableCell>
+														<TableCell
+															className="text-sm max-w-xs truncate"
+															title={audit.call_summary}
+														>
+															{audit.call_summary || "—"}
+														</TableCell>
+														<TableCell className="text-sm">{audit.lead.name}</TableCell>
+														<TableCell>
+															{audit.dispositions ? (
+																<Badge
+																	variant="outline"
+																	className="bg-primary/10 text-primary border-primary/30"
+																>
+																	{formatDisposition(audit.dispositions)}
+																</Badge>
+															) : (
+																<span className="text-xs text-muted-foreground">—</span>
+															)}
+														</TableCell>
+														<TableCell className="text-xs text-muted-foreground">
+															{formatRelativeTime(audit.created_at)}
+														</TableCell>
+													</TableRow>
+												);
+											}
+											return null;
+										})}
 									</TableBody>
 								</Table>
 

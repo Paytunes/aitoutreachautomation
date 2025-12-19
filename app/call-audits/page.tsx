@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getCallAudits, getCampaigns, getDispositions } from "@/lib/mock-api";
+import { getCallAudits, getDispositions, DISPOSITION_CHOICES } from "@/lib/mock-api";
 import type { CallAuditView } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,23 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Search, ArrowUp, ArrowDown, ArrowUpDown, X } from "lucide-react";
 
-// Disposition choices constant (from backend)
-const DISPOSITION_CHOICES = [
-	["meeting_scheduled", "Meeting Scheduled"],
-	["whatsapp_requested", "Whatsapp Requested"],
-	["follow_up_needed", "Follow Up Needed"],
-	["case_studies_requested", "Case Studies Requested"],
-	["callback_requested", "Callback Requested"],
-	["share_deck", "Share Deck"],
-	["voicemail", "Voicemail"],
-	["technical_issues", "Technical Issues"],
-	["wrong_company", "Wrong Company"],
-	["wrong_person", "Wrong Person"],
-	["not_interested", "Not Interested"],
-	["dnd_requested", "DND Requested"],
-	["NA", "NA"],
-] as const;
-
 // Helper function to get disposition label from value
 const getDispositionLabel = (value?: string): string => {
 	if (!value) return "—";
@@ -36,7 +19,7 @@ const getDispositionLabel = (value?: string): string => {
 	return choice ? choice[1] : value;
 };
 
-type SortColumn = "call_id" | "lead" | "campaign" | "phone" | "duration" | "disposition" | "interest" | "status";
+type SortColumn = "lead" | "phone" | "duration" | "disposition" | "interest" | "created";
 type SortDirection = "asc" | "desc";
 
 interface SortConfig {
@@ -52,9 +35,7 @@ export default function CallAuditsPage() {
 
 	// Filter states
 	const [searchQuery, setSearchQuery] = useState("");
-	const [campaignFilter, setCampaignFilter] = useState("");
 	const [dispositionFilter, setDispositionFilter] = useState("");
-	const [campaigns, setCampaigns] = useState<ReturnType<typeof getCampaigns>>([]);
 	const [dispositions, setDispositions] = useState<string[]>([]);
 
 	// Sort states - default sort on Duration descending
@@ -64,7 +45,6 @@ export default function CallAuditsPage() {
 
 	// Load filters data
 	useEffect(() => {
-		setCampaigns(getCampaigns());
 		setDispositions(getDispositions());
 	}, []);
 
@@ -74,7 +54,6 @@ export default function CallAuditsPage() {
 			setLoading(true);
 			// Load a large number to get all audits for sorting
 			const result = await getCallAudits(1, 1000, {
-				campaign_id: campaignFilter || undefined,
 				disposition: dispositionFilter || undefined,
 			});
 			setAllAudits(result.data);
@@ -82,13 +61,11 @@ export default function CallAuditsPage() {
 			setLoading(false);
 		};
 		loadAudits();
-	}, [campaignFilter, dispositionFilter]);
+	}, [dispositionFilter]);
 
 	// Filter by search query
-	const filteredAudits = allAudits.filter(
-		(audit) =>
-			audit.lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			audit.call_id.toLowerCase().includes(searchQuery.toLowerCase())
+	const filteredAudits = allAudits.filter((audit) =>
+		audit.lead.name.toLowerCase().includes(searchQuery.toLowerCase())
 	);
 
 	// Apply sorting
@@ -97,14 +74,8 @@ export default function CallAuditsPage() {
 			let comparison = 0;
 
 			switch (sort.column) {
-				case "call_id":
-					comparison = a.call_id.localeCompare(b.call_id);
-					break;
 				case "lead":
 					comparison = a.lead.name.localeCompare(b.lead.name);
-					break;
-				case "campaign":
-					comparison = a.campaign.name.localeCompare(b.campaign.name);
 					break;
 				case "phone":
 					comparison = a.phone_number.localeCompare(b.phone_number);
@@ -124,10 +95,8 @@ export default function CallAuditsPage() {
 					const interestB = b.interest_level || 0;
 					comparison = interestA - interestB;
 					break;
-				case "status":
-					const statusA = a.call_status || "";
-					const statusB = b.call_status || "";
-					comparison = statusA.localeCompare(statusB);
+				case "created":
+					comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
 					break;
 			}
 
@@ -232,23 +201,6 @@ export default function CallAuditsPage() {
 		}
 	};
 
-	const getCallStatusColor = (status?: string) => {
-		switch (status) {
-			case "ANSWERED":
-				return "bg-green-500/10 text-green-700 border-green-500/30";
-			case "NO ANSWER":
-				return "bg-yellow-500/10 text-yellow-700 border-yellow-500/30";
-			case "BUSY":
-				return "bg-orange-500/10 text-orange-700 border-orange-500/30";
-			case "FAILED":
-				return "bg-red-500/10 text-red-700 border-red-500/30";
-			case "NA":
-				return "bg-gray-500/10 text-gray-700 border-gray-500/30";
-			default:
-				return "bg-gray-500/10 text-gray-700 border-gray-500/30";
-		}
-	};
-
 	return (
 		<div className="flex-1 space-y-6 p-6">
 			{/* Filters Card */}
@@ -267,29 +219,6 @@ export default function CallAuditsPage() {
 								}}
 								className="pl-10 bg-background text-foreground border-border"
 							/>
-						</div>
-
-						{/* Campaign Filter */}
-						<div className="w-full">
-							<Select
-								value={campaignFilter || "all"}
-								onValueChange={(value) => {
-									setCampaignFilter(value === "all" ? "" : value);
-									setPage(1);
-								}}
-							>
-								<SelectTrigger className="bg-background text-foreground border-border w-full">
-									<SelectValue placeholder="Filter by campaign" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All Campaigns</SelectItem>
-									{campaigns.map((campaign) => (
-										<SelectItem key={campaign.id} value={campaign.id}>
-											{campaign.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
 						</div>
 
 						{/* Disposition Filter */}
@@ -319,7 +248,6 @@ export default function CallAuditsPage() {
 						<Button
 							onClick={() => {
 								setSearchQuery("");
-								setCampaignFilter("");
 								setDispositionFilter("");
 								setPage(1);
 								setSorts([{ column: "duration", direction: "desc" }]);
@@ -337,8 +265,7 @@ export default function CallAuditsPage() {
 			<Card className="bg-card border-border">
 				<CardHeader>
 					<CardTitle className="text-foreground">
-						Call Audits ({totalFiltered}{" "}
-						{searchQuery || campaignFilter || dispositionFilter ? `filtered` : ""} of {total})
+						Call Audits ({totalFiltered} {searchQuery || dispositionFilter ? `filtered` : ""} of {total})
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -359,31 +286,11 @@ export default function CallAuditsPage() {
 											<TableHead className="text-foreground">
 												<button
 													type="button"
-													onClick={(e) => handleSort("call_id", e)}
-													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
-												>
-													Call ID
-													{getSortIcon("call_id")}
-												</button>
-											</TableHead>
-											<TableHead className="text-foreground">
-												<button
-													type="button"
 													onClick={(e) => handleSort("lead", e)}
 													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
 												>
 													Lead
 													{getSortIcon("lead")}
-												</button>
-											</TableHead>
-											<TableHead className="text-foreground">
-												<button
-													type="button"
-													onClick={(e) => handleSort("campaign", e)}
-													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
-												>
-													Campaign
-													{getSortIcon("campaign")}
 												</button>
 											</TableHead>
 											<TableHead className="text-foreground">
@@ -409,6 +316,16 @@ export default function CallAuditsPage() {
 											<TableHead className="text-foreground">
 												<button
 													type="button"
+													onClick={(e) => handleSort("created", e)}
+													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
+												>
+													Called On
+													{getSortIcon("created")}
+												</button>
+											</TableHead>
+											<TableHead className="text-foreground">
+												<button
+													type="button"
 													onClick={(e) => handleSort("disposition", e)}
 													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
 												>
@@ -426,31 +343,19 @@ export default function CallAuditsPage() {
 													{getSortIcon("interest")}
 												</button>
 											</TableHead>
-											<TableHead className="text-foreground">
-												<button
-													type="button"
-													onClick={(e) => handleSort("status", e)}
-													className="flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
-												>
-													Call Status
-													{getSortIcon("status")}
-												</button>
-											</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
 										{paginatedAudits.map((audit) => (
 											<TableRow key={audit.id} className="border-border hover:bg-muted/50">
-												<TableCell className="font-mono text-sm">
+												<TableCell className="text-sm">
 													<Link
 														href={`/call-audits/${audit.id}`}
 														className="text-primary hover:underline"
 													>
-														{audit.call_id}
+														{audit.lead.name}
 													</Link>
 												</TableCell>
-												<TableCell className="text-sm">{audit.lead.name}</TableCell>
-												<TableCell className="text-sm">{audit.campaign.name}</TableCell>
 												<TableCell className="text-sm font-mono">
 													{audit.phone_number}
 												</TableCell>
@@ -458,6 +363,13 @@ export default function CallAuditsPage() {
 													{audit.call_duration
 														? `${(audit.call_duration / 60).toFixed(1)}m`
 														: "—"}
+												</TableCell>
+												<TableCell className="text-xs text-muted-foreground">
+													{new Date(audit.created_at).toLocaleDateString(undefined, {
+														year: "numeric",
+														month: "short",
+														day: "numeric",
+													})}
 												</TableCell>
 												<TableCell>
 													<Badge
@@ -483,14 +395,6 @@ export default function CallAuditsPage() {
 															{audit.interest_level || 0}/10
 														</span>
 													</div>
-												</TableCell>
-												<TableCell>
-													<Badge
-														variant="outline"
-														className={getCallStatusColor(audit.call_status)}
-													>
-														{audit.call_status || "—"}
-													</Badge>
 												</TableCell>
 											</TableRow>
 										))}

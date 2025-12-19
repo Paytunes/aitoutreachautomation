@@ -43,6 +43,9 @@ export interface LeadContact {
 	id: string;
 	name: string;
 	email?: string;
+	personal_email?: string;
+	secondary_email?: string;
+	group_email?: string;
 	phone?: string;
 	company?: string;
 	company_type?: string;
@@ -58,6 +61,10 @@ export interface Actionable {
 	description?: string;
 	is_active: boolean;
 	additional_metadata?: Record<string, any>;
+	template_data?: Record<string, any>;
+	dispositions?: string[];
+	default_status?: string;
+	preference?: string[];
 	created_at: string;
 	updated_at: string;
 }
@@ -75,6 +82,7 @@ export interface Task {
 	call_audit_id?: string;
 	task_status: "todo" | "completed";
 	description?: string;
+	notes?: string;
 	created_at: string;
 	updated_at: string;
 }
@@ -114,6 +122,20 @@ export interface TaskView extends Task {
 	actionable: Actionable;
 	employee: Employee;
 	call_audit?: CallAuditView;
+}
+
+// Unified type for combined list of Call Audits and Tasks
+export type ItemType = "call_audit" | "task";
+
+export interface UnifiedItem {
+	type: ItemType;
+	id: string;
+	created_at: string;
+	updated_at: string;
+	// Call Audit specific fields (when type === "call_audit")
+	call_audit?: CallAuditView;
+	// Task specific fields (when type === "task")
+	task?: TaskView;
 }
 
 export interface DashboardMetrics {

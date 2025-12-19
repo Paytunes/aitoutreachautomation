@@ -10,9 +10,10 @@ interface DispositionSelectorProps {
 	defaultDisposition?: string;
 	dispositionChoices: readonly [string, string][];
 	auditId: string;
+	compact?: boolean;
 }
 
-export function DispositionSelector({ defaultDisposition, dispositionChoices, auditId }: DispositionSelectorProps) {
+export function DispositionSelector({ defaultDisposition, dispositionChoices, auditId, compact = false }: DispositionSelectorProps) {
 	const [selectedDisposition, setSelectedDisposition] = useState<string | undefined>(defaultDisposition);
 	const [isSaving, setIsSaving] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);
@@ -47,6 +48,44 @@ export function DispositionSelector({ defaultDisposition, dispositionChoices, au
 		}
 	};
 
+	// Compact version for inline use in header
+	if (compact) {
+		return (
+			<div className="flex items-center gap-2">
+				<Select value={selectedDisposition || ""} onValueChange={handleDispositionChange}>
+					<SelectTrigger className="bg-background border-border text-foreground h-9 w-48">
+						<SelectValue placeholder="Select disposition" />
+					</SelectTrigger>
+					<SelectContent>
+						{dispositionChoices.map(([value, label]) => (
+							<SelectItem key={value} value={value}>
+								{label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				{hasChanges && (
+					<Button
+						onClick={handleSave}
+						disabled={isSaving}
+						size="sm"
+						className="bg-primary hover:bg-primary/90 text-white font-medium h-9"
+					>
+						{isSaving ? (
+							<>Saving...</>
+						) : (
+							<>
+								<Save className="w-4 h-4 mr-1" />
+								Save
+							</>
+						)}
+					</Button>
+				)}
+			</div>
+		);
+	}
+
+	// Full card version
 	return (
 		<Card className="bg-card border-border">
 			<CardHeader className="pb-3">

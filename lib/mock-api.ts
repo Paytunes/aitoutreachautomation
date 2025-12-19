@@ -10,7 +10,22 @@ import type {
 	CallAuditView,
 	TaskView,
 	DashboardMetrics,
+	UnifiedItem,
 } from "./types";
+
+// Disposition choices constant - Order of call processing by Sales Ops
+export const DISPOSITION_CHOICES = [
+	["meeting_scheduled", "Meeting Scheduled"],
+	["callback_requested", "Callback Requested"],
+	["follow_up_needed", "Follow Up Needed"],
+	["case_studies_requested", "Case Studies Requested"],
+	["share_deck", "Share Deck"],
+	["whatsapp_requested", "Whatsapp Requested"],
+	["dnd_requested", "DND Requested"],
+	["wrong_company", "Wrong Company"],
+	["wrong_person", "Wrong Person"],
+	["NA", "NA"],
+] as const;
 
 // Mock Data
 const VERTICALS: Vertical[] = [
@@ -74,7 +89,7 @@ const CAMPAIGNS: AICallCampaign[] = [
 		name: "Q4 Property Lead Generation",
 		description: "Outbound campaign to qualify property investment leads",
 		started_at: "2024-10-01T00:00:00Z",
-		completed_at: null,
+		completed_at: undefined,
 		bot_id: "1",
 		vertical_id: "1",
 		solution: "outbound",
@@ -88,7 +103,7 @@ const CAMPAIGNS: AICallCampaign[] = [
 		name: "Insurance Support Enhancement",
 		description: "Inbound call routing and claim support automation",
 		started_at: "2024-11-01T00:00:00Z",
-		completed_at: null,
+		completed_at: undefined,
 		bot_id: "2",
 		vertical_id: "2",
 		solution: "inbound",
@@ -118,7 +133,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-001",
 		name: "John Smith",
 		email: "john.smith@email.com",
-		phone: "555-0001",
+		personal_email: "john.personal@gmail.com",
+		secondary_email: "john.smith@techcorp.com",
+		group_email: "sales@techcorp.com",
+		phone: "+91 98765 43210",
 		company: "TechCorp Solutions",
 		company_type: "Client",
 		company_zone: "North",
@@ -130,7 +148,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-002",
 		name: "Alice Johnson",
 		email: "alice.j@email.com",
-		phone: "555-0002",
+		personal_email: "alice.johnson@yahoo.com",
+		secondary_email: "alice.j@globalfinance.com",
+		group_email: "operations@globalfinance.com",
+		phone: "+91 98765 43211",
 		company: "Global Finance Inc",
 		company_type: "Agency",
 		company_zone: "East",
@@ -142,7 +163,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-003",
 		name: "Robert Brown",
 		email: "rbrown@email.com",
-		phone: "555-0003",
+		personal_email: "robert.brown.personal@gmail.com",
+		secondary_email: "robert.brown@realestatepartners.com",
+		group_email: "management@realestatepartners.com",
+		phone: "+91 98765 43212",
 		company: "Real Estate Partners",
 		company_type: "Client",
 		company_zone: "West",
@@ -154,7 +178,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-004",
 		name: "Mary Davis",
 		email: "mdavis@email.com",
-		phone: "555-0004",
+		personal_email: "mary.davis.personal@yahoo.com",
+		secondary_email: "mary.davis@insurancegroup.com",
+		group_email: "claims@insurancegroup.com",
+		phone: "+91 98765 43213",
 		company: "Insurance Group LLC",
 		company_type: "Client",
 		company_zone: "Central",
@@ -166,7 +193,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-005",
 		name: "Thomas Wilson",
 		email: "twilson@email.com",
-		phone: "555-0005",
+		personal_email: "thomas.wilson@gmail.com",
+		secondary_email: "thomas.wilson@propertyinvestments.com",
+		group_email: "advisors@propertyinvestments.com",
+		phone: "+91 98765 43214",
 		company: "Property Investments Co",
 		company_type: "Agency",
 		company_zone: "South",
@@ -178,7 +208,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-006",
 		name: "Sarah Martinez",
 		email: "sarah.m@email.com",
-		phone: "555-0006",
+		personal_email: "sarah.martinez@gmail.com",
+		secondary_email: "sarah.m@commercialrealty.com",
+		group_email: "bizdev@commercialrealty.com",
+		phone: "+91 98765 43215",
 		company: "Commercial Realty",
 		company_type: "Client",
 		company_zone: "North",
@@ -190,7 +223,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-007",
 		name: "David Lee",
 		email: "david.lee@email.com",
-		phone: "555-0007",
+		personal_email: "david.lee.personal@yahoo.com",
+		secondary_email: "david.lee@residentialproperties.com",
+		group_email: "sales@residentialproperties.com",
+		phone: "+91 98765 43216",
 		company: "Residential Properties",
 		company_type: "Client",
 		company_zone: "East",
@@ -202,7 +238,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-008",
 		name: "Emily Chen",
 		email: "emily.chen@email.com",
-		phone: "555-0008",
+		personal_email: "emily.chen.personal@gmail.com",
+		secondary_email: "emily.chen@premierinsurance.com",
+		group_email: "customer.relations@premierinsurance.com",
+		phone: "+91 98765 43217",
 		company: "Premier Insurance",
 		company_type: "Agency",
 		company_zone: "West",
@@ -214,7 +253,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-009",
 		name: "Michael Taylor",
 		email: "m.taylor@email.com",
-		phone: "555-0009",
+		personal_email: "michael.taylor@gmail.com",
+		secondary_email: "m.taylor@luxuryestates.com",
+		group_email: "partners@luxuryestates.com",
+		phone: "+91 98765 43218",
 		company: "Luxury Estates",
 		company_type: "Client",
 		company_zone: "Central",
@@ -226,7 +268,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-010",
 		name: "Jennifer White",
 		email: "j.white@email.com",
-		phone: "555-0010",
+		personal_email: "jennifer.white.personal@yahoo.com",
+		secondary_email: "j.white@metroproperties.com",
+		group_email: "directors@metroproperties.com",
+		phone: "+91 98765 43219",
 		company: "Metro Properties",
 		company_type: "Client",
 		company_zone: "South",
@@ -238,7 +283,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-011",
 		name: "Christopher Anderson",
 		email: "chris.a@email.com",
-		phone: "555-0011",
+		personal_email: "chris.anderson@gmail.com",
+		secondary_email: "chris.a@firsttimebuyers.com",
+		group_email: "agents@firsttimebuyers.com",
+		phone: "+91 98765 43220",
 		company: "First Time Buyers Co",
 		company_type: "Client",
 		company_zone: "North",
@@ -250,7 +298,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-012",
 		name: "Amanda Garcia",
 		email: "amanda.g@email.com",
-		phone: "555-0012",
+		personal_email: "amanda.garcia.personal@yahoo.com",
+		secondary_email: "amanda.g@retailsolutions.com",
+		group_email: "operations@retailsolutions.com",
+		phone: "+91 98765 43221",
 		company: "Retail Solutions",
 		company_type: "Agency",
 		company_zone: "East",
@@ -262,7 +313,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-013",
 		name: "James Rodriguez",
 		email: "james.r@email.com",
-		phone: "555-0013",
+		personal_email: "james.rodriguez@gmail.com",
+		secondary_email: "james.r@investmentproperties.com",
+		group_email: "directors@investmentproperties.com",
+		phone: "+91 98765 43222",
 		company: "Investment Properties Group",
 		company_type: "Client",
 		company_zone: "West",
@@ -274,7 +328,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-014",
 		name: "Lisa Thompson",
 		email: "lisa.t@email.com",
-		phone: "555-0014",
+		personal_email: "lisa.thompson.personal@gmail.com",
+		secondary_email: "lisa.t@secureinsurance.com",
+		group_email: "policies@secureinsurance.com",
+		phone: "+91 98765 43223",
 		company: "Secure Insurance",
 		company_type: "Agency",
 		company_zone: "Central",
@@ -286,7 +343,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-015",
 		name: "Daniel Moore",
 		email: "daniel.m@email.com",
-		phone: "555-0015",
+		personal_email: "daniel.moore@yahoo.com",
+		secondary_email: "daniel.m@urbanproperties.com",
+		group_email: "consultants@urbanproperties.com",
+		phone: "+91 98765 43224",
 		company: "Urban Properties",
 		company_type: "Client",
 		company_zone: "South",
@@ -298,7 +358,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-016",
 		name: "Jessica Jackson",
 		email: "jessica.j@email.com",
-		phone: "555-0016",
+		personal_email: "jessica.jackson.personal@gmail.com",
+		secondary_email: "jessica.j@rentalinvestments.com",
+		group_email: "portfolio@rentalinvestments.com",
+		phone: "+91 98765 43225",
 		company: "Rental Investments LLC",
 		company_type: "Client",
 		company_zone: "North",
@@ -310,7 +373,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-017",
 		name: "Matthew Harris",
 		email: "matt.h@email.com",
-		phone: "555-0017",
+		personal_email: "matthew.harris@gmail.com",
+		secondary_email: "matt.h@homesolutions.com",
+		group_email: "sales@homesolutions.com",
+		phone: "+91 98765 43226",
 		company: "Home Solutions",
 		company_type: "Client",
 		company_zone: "East",
@@ -322,7 +388,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-018",
 		name: "Nicole Clark",
 		email: "nicole.c@email.com",
-		phone: "555-0018",
+		personal_email: "nicole.clark.personal@yahoo.com",
+		secondary_email: "nicole.c@vacationproperties.com",
+		group_email: "marketing@vacationproperties.com",
+		phone: "+91 98765 43227",
 		company: "Vacation Properties Inc",
 		company_type: "Agency",
 		company_zone: "West",
@@ -334,7 +403,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-019",
 		name: "Ryan Lewis",
 		email: "ryan.l@email.com",
-		phone: "555-0019",
+		personal_email: "ryan.lewis@gmail.com",
+		secondary_email: "ryan.l@eliterealestate.com",
+		group_email: "executives@eliterealestate.com",
+		phone: "+91 98765 43228",
 		company: "Elite Real Estate",
 		company_type: "Client",
 		company_zone: "Central",
@@ -346,7 +418,10 @@ const LEADS: LeadContact[] = [
 		id: "lead-020",
 		name: "Stephanie Walker",
 		email: "stephanie.w@email.com",
-		phone: "555-0020",
+		personal_email: "stephanie.walker.personal@gmail.com",
+		secondary_email: "stephanie.w@trustinsurance.com",
+		group_email: "accounts@trustinsurance.com",
+		phone: "+91 98765 43229",
 		company: "Trust Insurance",
 		company_type: "Agency",
 		company_zone: "South",
@@ -358,49 +433,160 @@ const LEADS: LeadContact[] = [
 
 const ACTIONABLES: Actionable[] = [
 	{
-		id: "act-005",
-		name: "Send meeting invite",
-		description: "Schedule and send meeting invitation to the lead",
+		id: "act-001",
+		name: "Callback by AI - Someone picked up the call",
+		description: "Request AI callback when someone else picked up the call",
 		is_active: true,
-		additional_metadata: { priority: "high", category: "scheduling" },
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-002",
+		name: "Callback by AI - Call quality issue",
+		description: "Request AI callback due to call quality issues",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-003",
+		name: "Callback by Human - Followup",
+		description: "Request human callback for follow-up",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: ["Whatsapp", "Email", "Call"],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-004",
+		name: "Callback by Human - Get right POC info",
+		description: "Request human callback to get the right point of contact information",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: ["Whatsapp", "Email", "Call"],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-005",
+		name: "Callback by Human - Requested Human callback",
+		description: "Human callback requested by the lead",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
 		created_at: "2025-12-15T12:00:00Z",
 		updated_at: "2025-12-15T12:00:00Z",
 	},
 	{
 		id: "act-006",
-		name: "Send case studies and deck",
-		description: "Share case studies and product deck with the lead",
+		name: "Share deck/case studies - before meeting",
+		description: "Share deck or case studies before a scheduled meeting",
 		is_active: true,
-		additional_metadata: { priority: "medium", category: "documentation" },
-		created_at: "2025-12-14T12:15:00Z",
-		updated_at: "2025-12-14T12:15:00Z",
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: ["Whatsapp", "Email"],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
 	},
 	{
 		id: "act-007",
-		name: "Callback",
-		description: "Schedule a callback with the lead",
+		name: "Share deck/case studies - independently",
+		description: "Share deck or case studies independently without a meeting",
 		is_active: true,
-		additional_metadata: { priority: "high", category: "follow-up" },
-		created_at: "2025-12-13T12:30:00Z",
-		updated_at: "2025-12-13T12:30:00Z",
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: ["Whatsapp", "Email"],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
 	},
 	{
 		id: "act-008",
-		name: "Update lead data in CRM",
-		description: "Update lead information and status in CRM system",
+		name: "Send meeting invite - all info confirmed",
+		description: "Send meeting invite when all information has been confirmed",
 		is_active: true,
-		additional_metadata: { priority: "medium", category: "data-management" },
-		created_at: "2025-12-12T12:45:00Z",
-		updated_at: "2025-12-12T12:45:00Z",
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
 	},
 	{
 		id: "act-009",
-		name: "Text on Whatsapp",
-		description: "Send WhatsApp message to the lead",
+		name: "Send meeting invite - some info missing",
+		description: "Send meeting invite when some information is still missing",
 		is_active: true,
-		additional_metadata: { priority: "medium", category: "communication" },
-		created_at: "2025-12-11T13:00:00Z",
-		updated_at: "2025-12-11T13:00:00Z",
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: ["Whatsapp", "Email", "Call"],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-010",
+		name: "Update info in CRM - Lead contact info",
+		description: "Update lead contact information in CRM",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-011",
+		name: "Update info in CRM - DND",
+		description: "Update CRM information for Do Not Disturb requests",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
+	},
+	{
+		id: "act-012",
+		name: "Update info in CRM - IVR",
+		description: "Update CRM information based on IVR data",
+		is_active: true,
+		additional_metadata: {},
+		template_data: {},
+		dispositions: [],
+		default_status: "todo",
+		preference: [],
+		created_at: "2025-12-15T12:00:00Z",
+		updated_at: "2025-12-15T12:00:00Z",
 	},
 ];
 
@@ -410,7 +596,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-001",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-001",
-		phone_number: "555-0001",
+		phone_number: "+91 98765 43210",
 		source_phone_number: "+1-555-0100",
 		call_duration: 345,
 		call_url: "https://audio.example.com/call-001.mp3",
@@ -434,7 +620,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-002",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-002",
-		phone_number: "555-0002",
+		phone_number: "+91 98765 43211",
 		source_phone_number: "+1-555-0100",
 		call_duration: 0,
 		call_url: "https://audio.example.com/call-002.mp3",
@@ -458,7 +644,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-003",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-003",
-		phone_number: "555-0003",
+		phone_number: "+91 98765 43212",
 		source_phone_number: "+1-555-0100",
 		call_duration: 450,
 		call_url: "https://audio.example.com/call-003.mp3",
@@ -482,7 +668,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-004",
 		campaign_id: "camp-002",
 		call_id: "CALL-20241201-004",
-		phone_number: "555-0004",
+		phone_number: "+91 98765 43213",
 		source_phone_number: "inbound",
 		call_duration: 180,
 		call_url: "https://audio.example.com/call-004.mp3",
@@ -496,7 +682,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		is_company_name_wrong: false,
 		notes: "Positive customer experience. Consider for testimonial.",
 		actionables: [],
-		action_status: null,
+		action_status: undefined,
 		call_metadata: { sentiment: "very_positive", agent_performance: 0.95 },
 		created_at: "2025-12-13T13:20:00Z",
 		updated_at: "2025-12-13T13:20:00Z",
@@ -506,7 +692,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-005",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-005",
-		phone_number: "555-0005",
+		phone_number: "+91 98765 43214",
 		source_phone_number: "+1-555-0101",
 		call_duration: 280,
 		call_url: "https://audio.example.com/call-005.mp3",
@@ -530,7 +716,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-006",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-006",
-		phone_number: "555-0006",
+		phone_number: "+91 98765 43215",
 		source_phone_number: "+1-555-0100",
 		call_duration: 320,
 		call_url: "https://audio.example.com/call-006.mp3",
@@ -554,7 +740,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-007",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-007",
-		phone_number: "555-0007",
+		phone_number: "+91 98765 43216",
 		source_phone_number: "+1-555-0101",
 		call_duration: 0,
 		call_url: "https://audio.example.com/call-007.mp3",
@@ -578,7 +764,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-008",
 		campaign_id: "camp-002",
 		call_id: "CALL-20241201-008",
-		phone_number: "555-0008",
+		phone_number: "+91 98765 43217",
 		source_phone_number: "inbound",
 		call_duration: 420,
 		call_url: "https://audio.example.com/call-008.mp3",
@@ -592,7 +778,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		is_company_name_wrong: false,
 		notes: "Excellent customer service experience.",
 		actionables: [],
-		action_status: null,
+		action_status: undefined,
 		call_metadata: { sentiment: "very_positive", agent_performance: 0.94 },
 		created_at: "2025-12-11T16:00:00Z",
 		updated_at: "2025-12-11T16:00:00Z",
@@ -602,7 +788,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-009",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-009",
-		phone_number: "555-0009",
+		phone_number: "+91 98765 43218",
 		source_phone_number: "+1-555-0100",
 		call_duration: 380,
 		call_url: "https://audio.example.com/call-009.mp3",
@@ -626,7 +812,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-010",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241201-010",
-		phone_number: "555-0010",
+		phone_number: "+91 98765 43219",
 		source_phone_number: "+1-555-0101",
 		call_duration: 0,
 		call_url: "https://audio.example.com/call-010.mp3",
@@ -650,7 +836,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-011",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-001",
-		phone_number: "555-0011",
+		phone_number: "+91 98765 43220",
 		source_phone_number: "+1-555-0100",
 		call_duration: 275,
 		call_url: "https://audio.example.com/call-011.mp3",
@@ -674,7 +860,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-012",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-002",
-		phone_number: "555-0012",
+		phone_number: "+91 98765 43221",
 		source_phone_number: "+1-555-0100",
 		call_duration: 0,
 		call_url: "https://audio.example.com/call-012.mp3",
@@ -698,7 +884,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-013",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-003",
-		phone_number: "555-0013",
+		phone_number: "+91 98765 43222",
 		source_phone_number: "+1-555-0101",
 		call_duration: 510,
 		call_url: "https://audio.example.com/call-013.mp3",
@@ -722,7 +908,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-014",
 		campaign_id: "camp-002",
 		call_id: "CALL-20241202-004",
-		phone_number: "555-0014",
+		phone_number: "+91 98765 43223",
 		source_phone_number: "inbound",
 		call_duration: 240,
 		call_url: "https://audio.example.com/call-014.mp3",
@@ -736,7 +922,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		is_company_name_wrong: false,
 		notes: "Positive feedback. Consider for case study.",
 		actionables: [],
-		action_status: null,
+		action_status: undefined,
 		call_metadata: { sentiment: "very_positive", agent_performance: 0.93 },
 		created_at: "2025-12-11T12:00:00Z",
 		updated_at: "2025-12-11T12:00:00Z",
@@ -746,7 +932,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-015",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-005",
-		phone_number: "555-0015",
+		phone_number: "+91 98765 43224",
 		source_phone_number: "+1-555-0100",
 		call_duration: 0,
 		call_url: "https://audio.example.com/call-015.mp3",
@@ -770,7 +956,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-016",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-006",
-		phone_number: "555-0016",
+		phone_number: "+91 98765 43225",
 		source_phone_number: "+1-555-0101",
 		call_duration: 395,
 		call_url: "https://audio.example.com/call-016.mp3",
@@ -794,7 +980,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-017",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-007",
-		phone_number: "555-0017",
+		phone_number: "+91 98765 43226",
 		source_phone_number: "+1-555-0100",
 		call_duration: 0,
 		call_url: "https://audio.example.com/call-017.mp3",
@@ -818,7 +1004,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-018",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-008",
-		phone_number: "555-0018",
+		phone_number: "+91 98765 43227",
 		source_phone_number: "+1-555-0101",
 		call_duration: 360,
 		call_url: "https://audio.example.com/call-018.mp3",
@@ -842,7 +1028,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-019",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241202-009",
-		phone_number: "555-0019",
+		phone_number: "+91 98765 43228",
 		source_phone_number: "+1-555-0100",
 		call_duration: 290,
 		call_url: "https://audio.example.com/call-019.mp3",
@@ -866,7 +1052,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-020",
 		campaign_id: "camp-002",
 		call_id: "CALL-20241202-010",
-		phone_number: "555-0020",
+		phone_number: "+91 98765 43229",
 		source_phone_number: "inbound",
 		call_duration: 200,
 		call_url: "https://audio.example.com/call-020.mp3",
@@ -880,7 +1066,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		is_company_name_wrong: false,
 		notes: "Satisfied customer. Good candidate for referral program.",
 		actionables: [],
-		action_status: null,
+		action_status: undefined,
 		call_metadata: { sentiment: "positive", agent_performance: 0.88 },
 		created_at: "2025-12-15T18:00:00Z",
 		updated_at: "2025-12-15T18:00:00Z",
@@ -890,7 +1076,7 @@ const CALL_AUDITS: CallAuditData[] = [
 		lead_id: "lead-007",
 		campaign_id: "camp-001",
 		call_id: "CALL-20241215-021",
-		phone_number: "555-0007",
+		phone_number: "+91 98765 43216",
 		source_phone_number: "+1-555-0100",
 		call_duration: 280,
 		call_url: "https://audio.example.com/call-021.mp3",
@@ -1064,6 +1250,56 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 	};
 }
 
+// Helper function to apply call audit filters according to business rules
+function applyCallAuditFilters(audits: CallAuditView[]): CallAuditView[] {
+	return audits.filter((audit) => {
+		// Filter 1: Remove calls where status is "BUSY", "NO ANSWER", and "FAILED"
+		const excludedStatuses = ["BUSY", "NO ANSWER", "FAILED"];
+		if (audit.call_status && excludedStatuses.includes(audit.call_status.toUpperCase())) {
+			return false;
+		}
+
+		// Filter 2: Check for failed call status with Oriserve
+		// If Oriserve status indicates failure, exclude the call
+		// Assuming Oriserve status might be in call_metadata or we check for "ORISERVE_FAILED" status
+		if (audit.call_status === "FAILED") {
+			return false;
+		}
+
+		// Filter 3: Remove voicemail disposition calls
+		if (audit.dispositions === "voicemail") {
+			return false;
+		}
+
+		// Filter 4: Remove calls with "Voicemail" and "answering machine" in call summary (case insensitive)
+		if (audit.call_summary) {
+			const summaryLower = audit.call_summary.toLowerCase();
+			if (summaryLower.includes("voicemail") || summaryLower.includes("answering machine")) {
+				return false;
+			}
+		}
+
+		// Filter 5: High interest calls (interest level 5+) without specific dispositions
+		// These should be kept but assigned to sales (handled separately, not filtered out)
+
+		return true;
+	});
+}
+
+// Helper function to check if a phone number has failed 3 times and mark it as wrong in CRM
+// In a real system, this would query the database for failure count per phone number
+function checkAndMarkWrongNumber(phoneNumber: string, callStatus: string | undefined): void {
+	// This is a placeholder - in real implementation, we would:
+	// 1. Query all call audits for this phone number
+	// 2. Count failures (status = "FAILED" or "ORISERVE_FAILED")
+	// 3. If count >= 3, update the lead's phone number as wrong in CRM
+	// For now, we'll just log it as a note
+	if (callStatus === "FAILED" || callStatus === "ORISERVE_FAILED") {
+		// In real system: mark lead phone as wrong in CRM
+		// For now, this is handled by the backend when processing calls
+	}
+}
+
 export async function getCallAudits(
 	page = 1,
 	limit = 10,
@@ -1080,6 +1316,15 @@ export async function getCallAudits(
 		lead: LEADS.find((l) => l.id === audit.lead_id)!,
 		campaign: CAMPAIGNS.find((c) => c.id === audit.campaign_id)!,
 	}));
+
+	// Apply business rule filters (exclude BUSY, NO ANSWER, FAILED, voicemail, etc.)
+	results = applyCallAuditFilters(results);
+
+	// Check for numbers that should be marked as wrong (failures >= 3)
+	// In real system, this would be handled by a background job
+	results.forEach((audit) => {
+		checkAndMarkWrongNumber(audit.phone_number, audit.call_status);
+	});
 
 	if (filters?.campaign_id) {
 		results = results.filter((a) => a.campaign_id === filters.campaign_id);
@@ -1223,7 +1468,11 @@ export function getVerticals(): Vertical[] {
 }
 
 export function getDispositions(): string[] {
-	return [...new Set(CALL_AUDITS.map((a) => a.dispositions).filter(Boolean))];
+	// Return dispositions in the specified order
+	return DISPOSITION_CHOICES.map(([value]) => value).filter((value) => {
+		// Only return dispositions that exist in the data
+		return CALL_AUDITS.some((a) => a.dispositions === value);
+	});
 }
 
 export function getEmployees(): Employee[] {
@@ -1232,4 +1481,290 @@ export function getEmployees(): Employee[] {
 
 export function getActionables(): Actionable[] {
 	return ACTIONABLES;
+}
+
+/**
+ * Get recommended actionables based on call audit properties
+ * Recommendations are based on disposition, interest level, call summary, and other factors
+ */
+export function getRecommendedActionables(audit: CallAuditView): string[] {
+	const recommendedIds: string[] = [];
+	const disposition = audit.dispositions?.toLowerCase();
+	const interestLevel = audit.interest_level || 0;
+	const callSummary = audit.call_summary?.toLowerCase() || "";
+	const isWrongCompany = audit.is_company_name_wrong || false;
+	const voicemailDetected = audit.voicemail_detected || false;
+
+	// Map actionables by their intended use cases
+	// Callback by AI - Someone picked up the call
+	if (callSummary.includes("someone else") || callSummary.includes("different person")) {
+		recommendedIds.push("act-001");
+	}
+
+	// Callback by AI - Call quality issue
+	if (
+		callSummary.includes("quality") ||
+		callSummary.includes("poor connection") ||
+		callSummary.includes("bad line")
+	) {
+		recommendedIds.push("act-002");
+	}
+
+	// Callback by Human - Followup
+	if (disposition === "follow_up_needed" || disposition === "callback_requested") {
+		recommendedIds.push("act-003");
+	}
+
+	// Callback by Human - Get right POC info
+	if (isWrongCompany || callSummary.includes("wrong person") || callSummary.includes("not the right contact")) {
+		recommendedIds.push("act-004");
+	}
+
+	// Callback by Human - Requested Human callback
+	if (
+		callSummary.includes("speak to human") ||
+		callSummary.includes("human representative") ||
+		disposition === "callback_requested"
+	) {
+		recommendedIds.push("act-005");
+	}
+
+	// Share deck/case studies - before meeting
+	if (
+		(disposition === "case_studies_requested" || disposition === "share_deck") &&
+		(callSummary.includes("meeting") || callSummary.includes("schedule"))
+	) {
+		recommendedIds.push("act-006");
+	}
+
+	// Share deck/case studies - independently
+	if (disposition === "case_studies_requested" || disposition === "share_deck") {
+		recommendedIds.push("act-007");
+	}
+
+	// Send meeting invite - all info confirmed
+	if (disposition === "meeting_scheduled" && interestLevel >= 7 && !callSummary.includes("missing")) {
+		recommendedIds.push("act-008");
+	}
+
+	// Send meeting invite - some info missing
+	if (disposition === "meeting_scheduled" && (callSummary.includes("missing") || callSummary.includes("need more"))) {
+		recommendedIds.push("act-009");
+	}
+
+	// Update info in CRM - Lead contact info
+	if (
+		callSummary.includes("update contact") ||
+		callSummary.includes("wrong email") ||
+		callSummary.includes("wrong phone")
+	) {
+		recommendedIds.push("act-010");
+	}
+
+	// Update info in CRM - DND
+	if (disposition === "dnd_requested" || callSummary.includes("do not disturb") || callSummary.includes("dnd")) {
+		recommendedIds.push("act-011");
+	}
+
+	// Update info in CRM - IVR
+	if (callSummary.includes("ivr") || callSummary.includes("interactive voice")) {
+		recommendedIds.push("act-012");
+	}
+
+	// Combine with existing recommendations from audit.actionables
+	const existingRecommendations = audit.actionables || [];
+	const combinedRecommendations = [...new Set([...recommendedIds, ...existingRecommendations])];
+
+	return combinedRecommendations;
+}
+
+// Unified API to get both Call Audits and Tasks in a single list
+export async function getUnifiedItems(
+	page = 1,
+	limit = 10,
+	filters?: {
+		type?: "call_audit" | "task" | "all";
+		status?: string; // For tasks: "todo" | "completed"
+		employee_id?: string; // For tasks
+		campaign_id?: string; // For call audits
+		disposition?: string; // For call audits
+	}
+): Promise<{ data: UnifiedItem[]; total: number; page: number; limit: number }> {
+	// Get all call audits
+	const allCallAudits = CALL_AUDITS.map((audit) => ({
+		...audit,
+		lead: LEADS.find((l) => l.id === audit.lead_id)!,
+		campaign: CAMPAIGNS.find((c) => c.id === audit.campaign_id)!,
+	}));
+
+	// Get all tasks
+	const allTasks = TASKS.map((task) => {
+		// If task has a linked call audit, populate it with lead and campaign
+		let callAuditWithDetails = undefined;
+		if (task.call_audit_id) {
+			const audit = CALL_AUDITS.find((c) => c.id === task.call_audit_id);
+			if (audit) {
+				callAuditWithDetails = {
+					...audit,
+					lead: LEADS.find((l) => l.id === audit.lead_id)!,
+					campaign: CAMPAIGNS.find((c) => c.id === audit.campaign_id)!,
+				};
+			}
+		}
+
+		return {
+			...task,
+			actionable: ACTIONABLES.find((a) => a.id === task.actionable_id)!,
+			employee: EMPLOYEES.find((e) => e.id === task.employee_id)!,
+			call_audit: callAuditWithDetails,
+		};
+	});
+
+	// Apply business rule filters to call audits (exclude BUSY, NO ANSWER, FAILED, voicemail, etc.)
+	let filteredCallAudits = applyCallAuditFilters(allCallAudits);
+
+	// Apply additional filters
+	if (filters?.campaign_id) {
+		filteredCallAudits = filteredCallAudits.filter((a) => a.campaign_id === filters.campaign_id);
+	}
+	if (filters?.disposition) {
+		filteredCallAudits = filteredCallAudits.filter((a) => a.dispositions === filters.disposition);
+	}
+
+	// Filter tasks
+	let filteredTasks = allTasks;
+	if (filters?.status) {
+		filteredTasks = filteredTasks.filter((t) => t.task_status === filters.status);
+	}
+	if (filters?.employee_id) {
+		filteredTasks = filteredTasks.filter((t) => t.employee_id === filters.employee_id);
+	}
+
+	// Convert to unified items
+	const callAuditItems: UnifiedItem[] = filteredCallAudits.map((audit) => ({
+		type: "call_audit",
+		id: audit.id,
+		created_at: audit.created_at,
+		updated_at: audit.updated_at,
+		call_audit: audit,
+	}));
+
+	const taskItems: UnifiedItem[] = filteredTasks.map((task) => ({
+		type: "task",
+		id: task.id,
+		created_at: task.created_at,
+		updated_at: task.updated_at,
+		task: task,
+	}));
+
+	// Combine and filter by type if specified
+	let combinedItems: UnifiedItem[] = [];
+	if (!filters?.type || filters.type === "all") {
+		combinedItems = [...callAuditItems, ...taskItems];
+	} else if (filters.type === "call_audit") {
+		combinedItems = callAuditItems;
+	} else if (filters.type === "task") {
+		combinedItems = taskItems;
+	}
+
+	// Sort by created_at descending (most recent first)
+	combinedItems.sort((a, b) => {
+		const dateA = new Date(a.created_at).getTime();
+		const dateB = new Date(b.created_at).getTime();
+		return dateB - dateA;
+	});
+
+	// Paginate
+	const start = (page - 1) * limit;
+	const end = start + limit;
+	const paginated = combinedItems.slice(start, end);
+
+	return { data: paginated, total: combinedItems.length, page, limit };
+}
+
+// Helper function to get unified item by ID (works for both call audits and tasks)
+export async function getUnifiedItemById(id: string): Promise<UnifiedItem | null> {
+	// Try call audit first
+	const audit = CALL_AUDITS.find((a) => a.id === id);
+	if (audit) {
+		return {
+			type: "call_audit",
+			id: audit.id,
+			created_at: audit.created_at,
+			updated_at: audit.updated_at,
+			call_audit: {
+				...audit,
+				lead: LEADS.find((l) => l.id === audit.lead_id)!,
+				campaign: CAMPAIGNS.find((c) => c.id === audit.campaign_id)!,
+			},
+		};
+	}
+
+	// Try task
+	const task = TASKS.find((t) => t.id === id);
+	if (task) {
+		// If task has a linked call audit, populate it with lead and campaign
+		let callAuditWithDetails = undefined;
+		if (task.call_audit_id) {
+			const linkedAudit = CALL_AUDITS.find((c) => c.id === task.call_audit_id);
+			if (linkedAudit) {
+				callAuditWithDetails = {
+					...linkedAudit,
+					lead: LEADS.find((l) => l.id === linkedAudit.lead_id)!,
+					campaign: CAMPAIGNS.find((c) => c.id === linkedAudit.campaign_id)!,
+				};
+			}
+		}
+
+		return {
+			type: "task",
+			id: task.id,
+			created_at: task.created_at,
+			updated_at: task.updated_at,
+			task: {
+				...task,
+				actionable: ACTIONABLES.find((a) => a.id === task.actionable_id)!,
+				employee: EMPLOYEES.find((e) => e.id === task.employee_id)!,
+				call_audit: callAuditWithDetails,
+			},
+		};
+	}
+
+	return null;
+}
+
+// Update task notes
+export async function updateTaskNotes(taskId: string, notes: string): Promise<void> {
+	const taskIndex = TASKS.findIndex((t) => t.id === taskId);
+	if (taskIndex === -1) {
+		throw new Error(`Task with id ${taskId} not found`);
+	}
+
+	// Update the task notes and updated_at timestamp
+	TASKS[taskIndex] = {
+		...TASKS[taskIndex],
+		notes,
+		updated_at: new Date().toISOString(),
+	};
+
+	// Simulate API delay
+	await new Promise((resolve) => setTimeout(resolve, 300));
+}
+
+// Update call audit notes
+export async function updateCallAuditNotes(auditId: string, notes: string): Promise<void> {
+	const auditIndex = CALL_AUDITS.findIndex((a) => a.id === auditId);
+	if (auditIndex === -1) {
+		throw new Error(`Call audit with id ${auditId} not found`);
+	}
+
+	// Update the call audit notes and updated_at timestamp
+	CALL_AUDITS[auditIndex] = {
+		...CALL_AUDITS[auditIndex],
+		notes,
+		updated_at: new Date().toISOString(),
+	};
+
+	// Simulate API delay
+	await new Promise((resolve) => setTimeout(resolve, 300));
 }

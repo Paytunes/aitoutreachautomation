@@ -21,21 +21,22 @@ import { useState, useEffect } from "react";
 import { useRole } from "@/lib/role-context";
 import type { UserRole } from "@/lib/auth";
 
-const EXECUTIVE_NAVIGATION = [
-	{ href: "/", label: "Executive Dashboard", icon: LayoutDashboard },
-	{ href: "/call-audits", label: "Call Audits", icon: PhoneCall },
-	{ href: "/tasks", label: "Tasks", icon: CheckSquare },
-];
+// COMMENTED OUT: Multiple user type navigation - keeping single type only
+// const EXECUTIVE_NAVIGATION = [
+// 	{ href: "/", label: "Executive Dashboard", icon: LayoutDashboard },
+// 	{ href: "/call-audits", label: "Call Audits", icon: PhoneCall },
+// 	{ href: "/tasks", label: "Tasks", icon: CheckSquare },
+// ];
 
-const SALES_OPS_NAVIGATION = [
-	{ href: "/", label: "Dashboard", icon: LayoutDashboard },
-	{ href: "/call-audits", label: "Call Audits", icon: PhoneCall },
-	{ href: "/tasks", label: "Tasks", icon: CheckSquare },
-];
+// const SALES_OPS_NAVIGATION = [
+// 	{ href: "/", label: "Dashboard", icon: LayoutDashboard },
+// 	{ href: "/call-audits", label: "Call Audits", icon: PhoneCall },
+// 	{ href: "/tasks", label: "Tasks", icon: CheckSquare },
+// ];
 
+// Single user type navigation (Sales Team)
 const SALES_TEAM_NAVIGATION = [
-	{ href: "/sales-team", label: "My Dashboard", icon: LayoutDashboard },
-	{ href: "/tasks/board", label: "Task Board", icon: KanbanSquare },
+	{ href: "/", label: "Dashboard", icon: LayoutDashboard },
 	{ href: "/tasks", label: "All Tasks", icon: CheckSquare },
 ];
 
@@ -54,7 +55,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: externalSetCollapsed }: SidebarProps) {
-	console.log("Sidebar", userType);
+	// COMMENTED OUT: Multiple user type logic
+	// console.log("Sidebar", userType);
 	const pathname = usePathname();
 	const [open, setOpen] = useState(false);
 	// Initialize to false to match server-side render
@@ -65,10 +67,9 @@ export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: 
 	const collapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
 	const setCollapsed = externalSetCollapsed || setInternalCollapsed;
 	
-	const { role: contextRole } = useRole();
-
-	// Use userType from token if available, otherwise fall back to context role
-	const role = userType || contextRole;
+	// COMMENTED OUT: Role context for multiple user types
+	// const { role: contextRole } = useRole();
+	// const role = userType || contextRole;
 
 	// Read from localStorage after mount to avoid hydration mismatch (only if using internal state)
 	useEffect(() => {
@@ -90,20 +91,22 @@ export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: 
 		}
 	}, [collapsed, mounted]);
 
-	const getNavigation = () => {
-		switch (role) {
-			case "executive":
-				return EXECUTIVE_NAVIGATION;
-			case "sales_ops":
-				return SALES_OPS_NAVIGATION;
-			case "sales_team":
-				return SALES_TEAM_NAVIGATION;
-			default:
-				return SALES_OPS_NAVIGATION;
-		}
-	};
+	// COMMENTED OUT: Multiple user type navigation logic
+	// const getNavigation = () => {
+	// 	switch (role) {
+	// 		case "executive":
+	// 			return EXECUTIVE_NAVIGATION;
+	// 		case "sales_ops":
+	// 			return SALES_OPS_NAVIGATION;
+	// 		case "sales_team":
+	// 			return SALES_TEAM_NAVIGATION;
+	// 		default:
+	// 			return SALES_OPS_NAVIGATION;
+	// 	}
+	// };
 
-	const NAVIGATION = getNavigation();
+	// Single user type navigation
+	const NAVIGATION = SALES_TEAM_NAVIGATION;
 
 	return (
 		<>
@@ -129,7 +132,7 @@ export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: 
 						{!collapsed && (
 							<div>
 								<h1 className="text-xl font-bold text-sidebar-foreground">
-									{role === "executive" ? "AI Sales Hub" : "Call Audit System"}
+									Call Audit System
 								</h1>
 								<p className="text-xs text-sidebar-foreground/60 mt-1">Command Center</p>
 							</div>
@@ -156,17 +159,11 @@ export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: 
 							// Handle active state - check exact match or if pathname starts with href (for nested routes)
 							let isActive = false;
 							if (item.href === "/") {
-								// Root path: only active if exactly "/" and not sales_team
-								isActive = pathname === "/" && role !== "sales_team";
-							} else if (item.href === "/sales-team") {
-								// Sales team dashboard: exact match only
-								isActive = pathname === "/sales-team";
+								// Root path: exact match only
+								isActive = pathname === "/";
 							} else if (item.href === "/tasks") {
-								// Tasks: exact match or detail pages (/tasks/[id]), but NOT /tasks/board
-								isActive = pathname === "/tasks" || (pathname.startsWith("/tasks/") && !pathname.startsWith("/tasks/board"));
-							} else if (item.href === "/tasks/board") {
-								// Task Board: exact match only
-								isActive = pathname === "/tasks/board";
+								// Tasks: exact match or detail pages (/tasks/[id])
+								isActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
 							} else {
 								// Other routes: exact match or pathname starts with href (for detail pages)
 								isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -192,8 +189,8 @@ export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: 
 						})}
 					</nav>
 
-					{/* Settings for Executive */}
-					{role === "executive" && (
+					{/* COMMENTED OUT: Settings for Executive */}
+					{/* {role === "executive" && (
 						<div className={cn("py-2", collapsed ? "px-3" : "px-3")}>
 							<Link
 								href="/settings"
@@ -211,11 +208,11 @@ export function Sidebar({ userType, collapsed: externalCollapsed, setCollapsed: 
 								{!collapsed && <span className="font-medium">Settings</span>}
 							</Link>
 						</div>
-					)}
+					)} */}
 
 					{!collapsed && (
 						<div className="px-6 py-4 border-t border-sidebar-border text-xs text-sidebar-foreground/50">
-							<p>© 2025 {role === "executive" ? "AI Sales Hub" : "Call Audit System"}</p>
+							<p>© 2025 Call Audit System</p>
 						</div>
 					)}
 				</div>
